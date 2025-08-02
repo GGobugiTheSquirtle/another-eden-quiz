@@ -36,11 +36,15 @@ def safe_icon_to_data_uri(path: str) -> str:
     placeholder = "data:image/gif;base64,R0lGODlhEAAQAIABAP///wAAACH5BAEKAAEALAAAAAAQABAAAAIijI+py+0Po5yUFQA7"
     
     def normalize_path(p: str) -> str:
+        # numpy.float64나 다른 숫자 타입을 문자열로 변환
+        if p is None or pd.isna(p):
+            return ""
+        p = str(p)  # 모든 타입을 문자열로 변환
         p = unicodedata.normalize("NFKC", p)
         return p.replace("\\", "/").strip().lstrip("\ufeff").replace("\u00A0", "")
 
-    path = normalize_path(path or '')
-    if not path or pd.isna(path):
+    path = normalize_path(path)
+    if not path or path == "" or path == "nan":
         return placeholder
     if path.startswith(("http://", "https://", "data:image")):
         return path
@@ -69,8 +73,9 @@ def load_quiz_data():
     
     try:
         df = pd.read_csv(csv_file, encoding='utf-8-sig')
-        # 빈 값들을 처리
-        df = df.fillna('')
+        # 빈 값들을 문자열로 변환하여 안전하게 처리
+        for col in df.columns:
+            df[col] = df[col].fillna('').astype(str)
         return df
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
@@ -85,6 +90,10 @@ def load_roulette_data():
     
     try:
         df = pd.read_csv(csv_file, encoding='utf-8-sig')
+        
+        # 빈 값들을 문자열로 변환하여 안전하게 처리
+        for col in df.columns:
+            df[col] = df[col].fillna('').astype(str)
         
         # 컬럼 매핑
         column_map = {
