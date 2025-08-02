@@ -19,6 +19,9 @@ from typing import List, Dict, Any
 # 전역 설정
 BASE_DIR = Path(__file__).parent.resolve()
 
+# 이미지 캐시
+_image_cache = {}
+
 # 페이지 설정
 st.set_page_config(
     page_title="🎮 Another Eden 게임 센터",
@@ -32,7 +35,7 @@ st.set_page_config(
 # ===============================================
 
 def safe_icon_to_data_uri(path: str) -> str:
-    """아이콘 경로를 data URI로 안전하게 변환"""
+    """아이콘 경로를 data URI로 안전하게 변환 (캐싱 포함)"""
     placeholder = "data:image/gif;base64,R0lGODlhEAAQAIABAP///wAAACH5BAEKAAEALAAAAAAQABAAAAIijI+py+0Po5yUFQA7"
     
     def normalize_path(p: str) -> str:
@@ -48,6 +51,10 @@ def safe_icon_to_data_uri(path: str) -> str:
     if path.startswith(("http://", "https://", "data:image")):
         return path
     
+    # 캐시 확인
+    if path in _image_cache:
+        return _image_cache[path]
+    
     abs_path = BASE_DIR / path
     try:
         if abs_path.exists() and abs_path.is_file():
@@ -56,13 +63,16 @@ def safe_icon_to_data_uri(path: str) -> str:
                 ext = abs_path.suffix.lower()
                 if ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
                     mime_type = f"image/{ext[1:]}" if ext != '.jpg' else "image/jpeg"
-                    return f"data:{mime_type};base64,{data}"
+                    result = f"data:{mime_type};base64,{data}"
+                    # 캐시에 저장
+                    _image_cache[path] = result
+                    return result
     except:
         pass
     return placeholder
 
 def get_character_image(char_name: str, char_index: int = None) -> str:
-    """캐릭터 이름으로 이미지 경로 찾기"""
+    """캐릭터 이름으로 이미지 경로 찾기 (개선된 버전)"""
     icons_dir = BASE_DIR / "character_art" / "icons"
     if not icons_dir.exists():
         return ""
@@ -71,24 +81,41 @@ def get_character_image(char_name: str, char_index: int = None) -> str:
     if not image_files:
         return ""
     
-    if char_index is not None:
-        image_index = char_index % len(image_files)
-        return str(image_files[image_index])
-    
+    # 1. 정확한 이름 매칭 (가장 우선)
     search_name = char_name.replace(" ", "").lower()
+    for file in image_files:
+        file_name = file.stem.lower()
+        if search_name == file_name:
+            return str(file)
     
+    # 2. 부분 매칭 (포함 관계)
     for file in image_files:
         file_name = file.stem.lower()
         if search_name in file_name or file_name in search_name:
             return str(file)
     
+    # 3. 단어별 매칭 (2글자 이상)
+    char_words = [word for word in search_name.split() if len(word) >= 2]
     for file in image_files:
         file_name = file.stem.lower()
-        char_words = search_name.split()
         for word in char_words:
-            if len(word) > 2 and word in file_name:
+            if word in file_name:
                 return str(file)
     
+    # 4. 특수 케이스 매칭 (ES, AS, NS 등)
+    if "ES" in char_name or "AS" in char_name or "NS" in char_name:
+        base_name = char_name.replace(" ES", "").replace(" AS", "").replace(" NS", "").replace(" ", "").lower()
+        for file in image_files:
+            file_name = file.stem.lower()
+            if base_name in file_name:
+                return str(file)
+    
+    # 5. char_index 기반 할당 (fallback)
+    if char_index is not None:
+        image_index = char_index % len(image_files)
+        return str(image_files[image_index])
+    
+    # 6. 해시 기반 할당 (최종 fallback)
     import hashlib
     char_hash = hashlib.md5(char_name.encode()).hexdigest()
     hash_int = int(char_hash[:8], 16)
@@ -224,11 +251,11 @@ def run_quiz_mode_fullscreen(df: pd.DataFrame, mode: str):
                 quiz_data['options'] = all_options
             elif mode == "속성 맞히기":
                 if char.get('속성명리스트'):
-                    correct_attrs = char['속성명리스트'].split('|')
+                    correct_attrs = [x.strip() for x in char['속성명리스트'].split('|') if x.strip()]
                     all_attrs = []
                     for attr_list in df['속성명리스트'].dropna():
                         if attr_list:
-                            all_attrs.extend([x.strip() for x in attr_list.split('|')])
+                            all_attrs.extend([x.strip() for x in attr_list.split('|') if x.strip()])
                     all_attrs = list(set(all_attrs))
                     wrong_attrs = [attr for attr in all_attrs if attr not in correct_attrs]
                     if len(wrong_attrs) >= 3:
@@ -238,13 +265,14 @@ def run_quiz_mode_fullscreen(df: pd.DataFrame, mode: str):
                     all_options = correct_attrs + wrong_attrs[:3]
                     random.shuffle(all_options)
                     quiz_data['options'] = all_options[:4]
+                    quiz_data['correct_answer'] = correct_attrs[0] if correct_attrs else ""
             elif mode == "무기 맞히기":
                 if char.get('무기명리스트'):
-                    correct_weapons = char['무기명리스트'].split('|')
+                    correct_weapons = [x.strip() for x in char['무기명리스트'].split('|') if x.strip()]
                     all_weapons = []
                     for weapon_list in df['무기명리스트'].dropna():
                         if weapon_list:
-                            all_weapons.extend([x.strip() for x in weapon_list.split('|')])
+                            all_weapons.extend([x.strip() for x in weapon_list.split('|') if x.strip()])
                     all_weapons = list(set(all_weapons))
                     wrong_weapons = [weapon for weapon in all_weapons if weapon not in correct_weapons]
                     if len(wrong_weapons) >= 3:
@@ -254,6 +282,7 @@ def run_quiz_mode_fullscreen(df: pd.DataFrame, mode: str):
                     all_options = correct_weapons + wrong_weapons[:3]
                     random.shuffle(all_options)
                     quiz_data['options'] = all_options[:4]
+                    quiz_data['correct_answer'] = correct_weapons[0] if correct_weapons else ""
             
             st.rerun()
     
@@ -310,9 +339,13 @@ def run_quiz_mode_fullscreen(df: pd.DataFrame, mode: str):
                         elif mode == "희귀도 맞히기":
                             correct = char.get('희귀도', '')
                         elif mode == "속성 맞히기":
-                            correct = char.get('속성명리스트', '').split('|')[0] if char.get('속성명리스트') else ''
+                            correct = quiz_data.get('correct_answer', '')
+                            if not correct:
+                                correct = char.get('속성명리스트', '').split('|')[0].strip() if char.get('속성명리스트') else ''
                         elif mode == "무기 맞히기":
-                            correct = char.get('무기명리스트', '').split('|')[0] if char.get('무기명리스트') else ''
+                            correct = quiz_data.get('correct_answer', '')
+                            if not correct:
+                                correct = char.get('무기명리스트', '').split('|')[0].strip() if char.get('무기명리스트') else ''
                         else:
                             correct = ""
                         
@@ -456,15 +489,16 @@ def run_roulette_fullscreen():
 # ===============================================
 
 def show_home_page():
-    """홈 페이지"""
+    """홈 페이지 (개선된 레이아웃)"""
     st.markdown("""
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 4rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
-        <h1 style="margin: 0; font-size: 3rem; color: #FFD700;">🎮 Another Eden 게임 센터</h1>
-        <p style="margin: 1rem 0; font-size: 1.5rem; opacity: 0.9;">캐릭터 퀴즈와 룰렛을 즐겨보세요!</p>
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 2.5rem; color: #FFD700;">🎮 Another Eden 게임 센터</h1>
+        <p style="margin: 1rem 0; font-size: 1.2rem; opacity: 0.9;">캐릭터 퀴즈와 룰렛을 즐겨보세요!</p>
     </div>
     """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
+    # 반응형 3컬럼 레이아웃
+    col1, col2, col3 = st.columns([1, 1, 1])
     
     with col1:
         if st.button("🎯 퀴즈쇼 시작", key="quiz_start_button", use_container_width=True, type="primary"):
@@ -472,10 +506,10 @@ def show_home_page():
             st.rerun()
         
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
-            <h2 style="margin: 0; color: #FFD700; font-size: 2.5rem;">🎯 퀴즈쇼</h2>
-            <p style="margin: 1rem 0; font-size: 1.2rem;">퀴즈를 풀고 캐릭터 지식을 테스트하세요!</p>
-            <ul style="text-align: left; margin: 1rem 0;">
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 15px; margin: 1rem 0; text-align: center; color: white;">
+            <h3 style="margin: 0; color: #FFD700; font-size: 1.8rem;">🎯 퀴즈쇼</h3>
+            <p style="margin: 0.5rem 0; font-size: 1rem;">퀴즈를 풀고 캐릭터 지식을 테스트하세요!</p>
+            <ul style="text-align: left; margin: 0.5rem 0; font-size: 0.9rem;">
                 <li>🏷️ 이름 맞히기</li>
                 <li>👤 실루엣 맞히기</li>
                 <li>⭐ 희귀도 맞히기</li>
@@ -491,15 +525,30 @@ def show_home_page():
             st.rerun()
         
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
-            <h2 style="margin: 0; color: #FFD700; font-size: 2.5rem;">🎰 캐릭터 룰렛</h2>
-            <p style="margin: 1rem 0; font-size: 1.2rem;">필터를 설정하고 랜덤 캐릭터를 뽑아보세요!</p>
-            <ul style="text-align: left; margin: 1rem 0;">
+        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 15px; margin: 1rem 0; text-align: center; color: white;">
+            <h3 style="margin: 0; color: #FFD700; font-size: 1.8rem;">🎰 캐릭터 룰렛</h3>
+            <p style="margin: 0.5rem 0; font-size: 1rem;">필터를 설정하고 랜덤 캐릭터를 뽑아보세요!</p>
+            <ul style="text-align: left; margin: 0.5rem 0; font-size: 0.9rem;">
                 <li>🔍 캐릭터 필터링</li>
                 <li>🎲 랜덤 뽑기</li>
                 <li>🏆 결과 표시</li>
                 <li>📊 상세 정보</li>
                 <li>🎨 시각적 효과</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 15px; margin: 1rem 0; text-align: center; color: white;">
+            <h3 style="margin: 0; color: #FFD700; font-size: 1.8rem;">📖 사용 가이드</h3>
+            <p style="margin: 0.5rem 0; font-size: 1rem;">게임을 즐기는 방법을 알아보세요!</p>
+            <ul style="text-align: left; margin: 0.5rem 0; font-size: 0.9rem;">
+                <li>🎯 퀴즈 모드 선택</li>
+                <li>🎰 룰렛 필터 설정</li>
+                <li>🏆 결과 확인</li>
+                <li>📊 점수 확인</li>
+                <li>🔄 다시 시작</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
