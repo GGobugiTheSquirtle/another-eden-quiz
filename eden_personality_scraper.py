@@ -105,8 +105,8 @@ def download_image(image_url, subfolder=""):
                     image_name = base_name + (guessed_ext if guessed_ext and guessed_ext != '.jpe' else '.jpg')
                 else: 
                     image_name = base_name + ".png" 
-                            except Exception: 
-                    image_name = base_name + ".png"
+            except Exception: 
+                image_name = base_name + ".png"
         
         image_name = re.sub(r'[<>:"/\\|?*]', '_', image_name)[:200]
 
