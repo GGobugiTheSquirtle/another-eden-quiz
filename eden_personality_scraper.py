@@ -809,7 +809,96 @@ class PersonalityScraperApp:
         
         self.root.after(100, self.process_queues)
 
+def integrated_data_generation():
+    """
+    통합 데이터 생성 함수 - 모든 필요한 데이터를 한 번에 생성
+    """
+    print("🚀 Another Eden 통합 데이터 생성 시작")
+    print("=" * 60)
+    
+    # 출력 디렉토리 설정
+    output_dir = os.path.join(SCRIPT_DIR, "generated_data")
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 로그 및 진행상황 큐 설정
+    log_queue = queue.Queue()
+    progress_queue = queue.Queue()
+    
+    try:
+        print("📡 데이터 스크래핑 시작...")
+        scraping_logic_with_personalities(log_queue, progress_queue, output_dir)
+        
+        # 큐 처리
+        while True:
+            try:
+                # 로그 메시지 처리
+                log_msg = log_queue.get_nowait()
+                print(f"[{time.strftime('%H:%M:%S')}] {log_msg}")
+            except queue.Empty:
+                pass
+            
+            try:
+                # 진행상황 처리
+                progress_data = progress_queue.get_nowait()
+                if progress_data.get('done', False):
+                    if progress_data.get('error', False):
+                        print(f"❌ 오류: {progress_data.get('error_message', '알 수 없는 오류')}")
+                        return False
+                    else:
+                        print("✅ 데이터 생성 완료!")
+                        break
+            except queue.Empty:
+                pass
+            
+            time.sleep(0.1)
+        
+        # 생성된 파일들 확인
+        generated_files = []
+        expected_files = [
+            "another_eden_characters_detailed.xlsx",
+            "eden_roulette_data_with_personalities.csv",
+            "character_personalities.csv"
+        ]
+        
+        for file_name in expected_files:
+            file_path = os.path.join(output_dir, file_name)
+            if os.path.exists(file_path):
+                size = os.path.getsize(file_path)
+                generated_files.append(f"✅ {file_name} ({size:,} bytes)")
+            else:
+                generated_files.append(f"❌ {file_name} (생성 실패)")
+        
+        print("\n📊 생성된 파일들:")
+        for file_status in generated_files:
+            print(f"  {file_status}")
+        
+        # 현재 디렉토리로 파일 복사
+        print("\n📁 파일 복사 중...")
+        for file_name in expected_files:
+            src_path = os.path.join(output_dir, file_name)
+            dst_path = os.path.join(SCRIPT_DIR, file_name)
+            if os.path.exists(src_path):
+                import shutil
+                shutil.copy2(src_path, dst_path)
+                print(f"  ✅ {file_name} 복사 완료")
+        
+        print("\n🎉 통합 데이터 생성 완료!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 통합 생성 중 오류 발생: {e}")
+        return False
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = PersonalityScraperApp(root)
-    root.mainloop()
+    import sys
+    
+    # 명령행 인수 확인
+    if len(sys.argv) > 1 and sys.argv[1] == "--integrated":
+        # 통합 생성 모드
+        success = integrated_data_generation()
+        sys.exit(0 if success else 1)
+    else:
+        # GUI 모드 (기존)
+        root = tk.Tk()
+        app = PersonalityScraperApp(root)
+        root.mainloop()

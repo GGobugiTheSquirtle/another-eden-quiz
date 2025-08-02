@@ -134,6 +134,16 @@ def main():
         else:
             st.sidebar.error("eden_personality_scraper.py 파일이 없습니다.")
     
+    st.sidebar.markdown("---")
+    
+    if st.sidebar.button("🚀 통합 데이터 생성", use_container_width=True, type="primary"):
+        if os.path.exists("eden_personality_scraper.py"):
+            st.sidebar.success("통합 데이터 생성을 시작합니다...")
+            st.sidebar.code("python eden_personality_scraper.py --integrated", language="bash")
+            st.sidebar.info("이 명령어는 모든 필요한 데이터를 한 번에 생성합니다!")
+        else:
+            st.sidebar.error("eden_personality_scraper.py 파일이 없습니다.")
+    
     # 메인 컨텐츠
     tab1, tab2, tab3, tab4 = st.tabs(["📊 프로젝트 상태", "🎮 앱 런처", "🔧 도구", "📖 가이드"])
     
@@ -249,6 +259,24 @@ def main():
             st.markdown("- 🔄 자동 CSV 생성")
             st.markdown("- 📊 향상된 진행률 표시")
             st.markdown("- 🛡️ 에러 처리 강화")
+            st.markdown("- 🚀 통합 데이터 생성 기능")
+            
+            st.markdown("---")
+            
+            # 통합 데이터 생성 섹션
+            st.subheader("🚀 통합 데이터 생성")
+            st.markdown("한 번에 모든 필요한 데이터를 생성합니다.")
+            
+            if st.button("통합 데이터 생성 실행", key="integrated_gen", use_container_width=True, type="primary"):
+                st.code("python eden_personality_scraper.py --integrated", language="bash")
+                st.info("""
+                **생성되는 파일들:**
+                - another_eden_characters_detailed.xlsx
+                - eden_roulette_data_with_personalities.csv  
+                - character_personalities.csv
+                
+                모든 파일이 자동으로 현재 디렉토리에 복사됩니다!
+                """)
         
         with col2:
             st.subheader("📋 기존 도구들")
@@ -273,12 +301,20 @@ def main():
         ## 🚀 빠른 시작 가이드
         
         ### 1단계: 데이터 수집
-        1. **개선된 스크레이퍼 실행**:
-           ```bash
-           python eden_personality_scraper.py
-           ```
-        2. 출력 폴더 선택 후 "캐릭터 데이터 수집" 버튼 클릭
-        3. Personalities 데이터를 포함한 완전한 데이터 수집 완료
+        
+        **방법 1: 통합 데이터 생성 (권장)**
+        ```bash
+        python eden_personality_scraper.py --integrated
+        ```
+        - 모든 필요한 데이터를 한 번에 생성
+        - 자동으로 현재 디렉토리에 파일 복사
+        
+        **방법 2: GUI 스크레이퍼**
+        ```bash
+        python eden_personality_scraper.py
+        ```
+        1. 출력 폴더 선택 후 "캐릭터 데이터 수집" 버튼 클릭
+        2. Personalities 데이터를 포함한 완전한 데이터 수집 완료
         
         ### 2단계: 앱 실행
         1. **퀴즈쇼 앱**: 
