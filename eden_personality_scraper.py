@@ -166,40 +166,45 @@ def scrape_all_personalities_from_page(headers_ua, log_queue_ref):
         
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # 각 퍼스널리티 섹션을 찾기
-        personality_sections = soup.find_all('h3')
+        # wikitable 클래스를 가진 테이블들 찾기
+        tables = soup.find_all('table', class_='wikitable')
+        log_queue_ref.put(f"Found {len(tables)} personality tables")
         
-        for section in personality_sections:
-            section_name = section.get_text(strip=True)
-            
-            # 다음 테이블 찾기
-            table = section.find_next_sibling('table', class_='wikitable')
-            if not table:
-                continue
-                
+        for table_idx, table in enumerate(tables):
             rows = table.find_all('tr')[1:]  # 헤더 제외
             
             for row in rows:
-                cells = row.find_all('td')
+                cells = row.find_all(['td', 'th'])
                 if len(cells) >= 2:
-                    # 캐릭터명 추출
-                    char_link = cells[0].find('a')
-                    if char_link:
-                        char_name = char_link.get_text(strip=True)
-                        
-                        # 퍼스널리티들 추출
-                        personality_cell = cells[1]
-                        personality_links = personality_cell.find_all('a')
-                        
-                        personalities = []
-                        for link in personality_links:
-                            personality_eng = link.get_text(strip=True)
-                            # 영어 -> 한국어 매칭
-                            personality_kor = personality_mapping.get(personality_eng, personality_eng)
-                            personalities.append(personality_kor)
-                        
-                        if char_name and personalities:
-                            character_personalities[char_name] = personalities
+                    # 첫 번째 셀: 퍼스널리티 이름
+                    personality_cell = cells[0]
+                    personality_eng = personality_cell.get_text(strip=True)
+                    
+                    # 한국어 퍼스널리티명으로 변환
+                    personality_kor = personality_mapping.get(personality_eng, personality_eng)
+                    
+                    # 두 번째 셀: 캐릭터 목록
+                    characters_cell = cells[1]
+                    
+                    # 캐릭터 링크들 추출
+                    character_links = characters_cell.find_all('a', href=True)
+                    
+                    for link in character_links:
+                        href = link.get('href', '')
+                        # 캐릭터 페이지인지 확인 (/w/로 시작하고 특정 패턴 제외)
+                        if (href.startswith('/w/') and 
+                            'Character' not in href and 
+                            'Personality' not in href and
+                            'Special:' not in href and
+                            'Category:' not in href):
+                            
+                            char_name = link.get_text(strip=True)
+                            if char_name and len(char_name) > 1:
+                                # 캐릭터에 퍼스널리티 추가
+                                if char_name not in character_personalities:
+                                    character_personalities[char_name] = []
+                                if personality_kor not in character_personalities[char_name]:
+                                    character_personalities[char_name].append(personality_kor)
         
         log_queue_ref.put(f"Found personality data for {len(character_personalities)} characters")
         
@@ -222,21 +227,54 @@ def scrape_personalities(detail_url, headers_ua, log_queue_ref):
         detail_resp.raise_for_status()
         detail_soup = BeautifulSoup(detail_resp.content, 'html.parser')
         
-        # 'Personalities' id를 가진 span 태그 찾기
+        # 여러 방법으로 퍼스널리티 찾기
+        
+        # 방법 1: 'Personalities' id를 가진 span 태그 찾기
         headline = detail_soup.find('span', id='Personalities')
         if headline:
-            # span의 부모(h2 또는 h3)를 찾고, 그 다음 형제인 ul 태그를 찾음
             parent_heading = headline.find_parent(['h2', 'h3'])
             if parent_heading:
+                # ul 태그 찾기
                 ul_tag = parent_heading.find_next_sibling('ul')
                 if ul_tag:
-                    # li 태그의 텍스트만 추출
                     for li in ul_tag.find_all('li'):
-                        # a 태그에서 퍼스널리티 이름 추출
                         link = li.find('a')
                         if link:
                             personality_eng = link.get_text(strip=True)
-                            # 영어 -> 한국어 매칭
+                            personality_kor = personality_mapping.get(personality_eng, personality_eng)
+                            if personality_kor and personality_kor not in personalities:
+                                personalities.append(personality_kor)
+        
+        # 방법 2: 'Personality' 텍스트가 포함된 헤딩 찾기
+        if not personalities:
+            for heading in detail_soup.find_all(['h2', 'h3', 'h4']):
+                if 'personalit' in heading.get_text().lower():
+                    next_element = heading.find_next_sibling()
+                    while next_element:
+                        if next_element.name == 'ul':
+                            for li in next_element.find_all('li'):
+                                link = li.find('a')
+                                if link:
+                                    personality_eng = link.get_text(strip=True)
+                                    personality_kor = personality_mapping.get(personality_eng, personality_eng)
+                                    if personality_kor and personality_kor not in personalities:
+                                        personalities.append(personality_kor)
+                            break
+                        elif next_element.name in ['h2', 'h3', 'h4']:
+                            break
+                        next_element = next_element.find_next_sibling()
+        
+        # 방법 3: 페이지에서 'Personality:' 텍스트 직접 찾기
+        if not personalities:
+            for element in detail_soup.find_all(text=re.compile(r'personalit', re.IGNORECASE)):
+                parent = element.parent
+                if parent:
+                    # 주변에서 링크 찾기
+                    nearby_links = parent.find_parent().find_all('a', href=True) if parent.find_parent() else []
+                    for link in nearby_links:
+                        href = link.get('href', '')
+                        if '/w/Personalities/' in href or 'personality' in href.lower():
+                            personality_eng = link.get_text(strip=True)
                             personality_kor = personality_mapping.get(personality_eng, personality_eng)
                             if personality_kor and personality_kor not in personalities:
                                 personalities.append(personality_kor)
@@ -244,7 +282,12 @@ def scrape_personalities(detail_url, headers_ua, log_queue_ref):
         if personalities:
             log_queue_ref.put(f"Found personalities: {', '.join(personalities)}")
         else:
-            log_queue_ref.put("No personalities found on this page")
+            # 디버그 정보: 페이지에 실제로 Personalities 관련 내용이 있는지 확인
+            personality_mentions = detail_soup.find_all(text=re.compile(r'personalit', re.IGNORECASE))
+            if personality_mentions:
+                log_queue_ref.put(f"Page mentions 'personality' {len(personality_mentions)} times but no structured data found")
+            else:
+                log_queue_ref.put("No personalities found on this page")
             
     except Exception as e:
         log_queue_ref.put(f"Error scraping personalities: {e}")
