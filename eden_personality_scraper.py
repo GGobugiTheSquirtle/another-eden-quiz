@@ -25,6 +25,7 @@ import pandas as pd
 # --- 기본 설정 ---
 BASE_URL = "https://anothereden.wiki"
 TARGET_URL = "https://anothereden.wiki/w/Characters"
+PERSONALITY_URL = "https://anothereden.wiki/w/Characters/Personality"
 CONFIG_FILE = "scraper_config.ini"
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -133,6 +134,80 @@ def download_image(image_url, subfolder=""):
             error_log_queue.put(f"Download Error (Other) for {full_image_url.split('/')[-1][:30]}...: {type(e).__name__}")
     return None
 
+# --- 퍼스널리티 매칭 데이터 로드 ---
+def load_personality_matching():
+    """퍼스널리티 매칭 CSV 파일을 로드합니다."""
+    personality_mapping = {}
+    try:
+        personality_csv_path = os.path.join(SCRIPT_DIR, "personality_matching.csv")
+        if os.path.exists(personality_csv_path):
+            df = pd.read_csv(personality_csv_path)
+            for _, row in df.iterrows():
+                if 'English' in row and 'Korean' in row:
+                    personality_mapping[row['English']] = row['Korean']
+    except Exception as e:
+        print(f"Error loading personality matching: {e}")
+    return personality_mapping
+
+def scrape_all_personalities_from_page(headers_ua, log_queue_ref):
+    """
+    Characters/Personality 페이지에서 전체 퍼스널리티 목록을 가져옵니다.
+    
+    Returns:
+        dict: {character_name: [personalities]} 형태의 딕셔너리
+    """
+    personality_mapping = load_personality_matching()
+    character_personalities = {}
+    
+    try:
+        log_queue_ref.put(f"Fetching personality data from: {PERSONALITY_URL}")
+        response = requests.get(PERSONALITY_URL, headers=headers_ua, timeout=15)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # 각 퍼스널리티 섹션을 찾기
+        personality_sections = soup.find_all('h3')
+        
+        for section in personality_sections:
+            section_name = section.get_text(strip=True)
+            
+            # 다음 테이블 찾기
+            table = section.find_next_sibling('table', class_='wikitable')
+            if not table:
+                continue
+                
+            rows = table.find_all('tr')[1:]  # 헤더 제외
+            
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) >= 2:
+                    # 캐릭터명 추출
+                    char_link = cells[0].find('a')
+                    if char_link:
+                        char_name = char_link.get_text(strip=True)
+                        
+                        # 퍼스널리티들 추출
+                        personality_cell = cells[1]
+                        personality_links = personality_cell.find_all('a')
+                        
+                        personalities = []
+                        for link in personality_links:
+                            personality_eng = link.get_text(strip=True)
+                            # 영어 -> 한국어 매칭
+                            personality_kor = personality_mapping.get(personality_eng, personality_eng)
+                            personalities.append(personality_kor)
+                        
+                        if char_name and personalities:
+                            character_personalities[char_name] = personalities
+        
+        log_queue_ref.put(f"Found personality data for {len(character_personalities)} characters")
+        
+    except Exception as e:
+        log_queue_ref.put(f"Error scraping personality page: {e}")
+    
+    return character_personalities
+
 def scrape_personalities(detail_url, headers_ua, log_queue_ref):
     """
     캐릭터 상세 페이지에서 Personalities 정보를 추출합니다.
@@ -140,6 +215,7 @@ def scrape_personalities(detail_url, headers_ua, log_queue_ref):
     Returns:
         list: 추출된 퍼스널리티 리스트
     """
+    personality_mapping = load_personality_matching()
     personalities = []
     try:
         detail_resp = requests.get(detail_url, headers=headers_ua, timeout=10)
@@ -156,14 +232,14 @@ def scrape_personalities(detail_url, headers_ua, log_queue_ref):
                 if ul_tag:
                     # li 태그의 텍스트만 추출
                     for li in ul_tag.find_all('li'):
-                        # 텍스트에서 숫자와 특수문자 제거하여 깔끔하게 정리
-                        text = li.get_text(strip=True)
-                        # 정규표현식으로 퍼스널리티 이름만 추출 (숫자와 아이콘 설명 제거)
-                        personality_match = re.match(r'^([A-Za-z\s]+)', text)
-                        if personality_match:
-                            personality = personality_match.group(1).strip()
-                            if personality and personality not in personalities:
-                                personalities.append(personality)
+                        # a 태그에서 퍼스널리티 이름 추출
+                        link = li.find('a')
+                        if link:
+                            personality_eng = link.get_text(strip=True)
+                            # 영어 -> 한국어 매칭
+                            personality_kor = personality_mapping.get(personality_eng, personality_eng)
+                            if personality_kor and personality_kor not in personalities:
+                                personalities.append(personality_kor)
         
         if personalities:
             log_queue_ref.put(f"Found personalities: {', '.join(personalities)}")
@@ -175,8 +251,26 @@ def scrape_personalities(detail_url, headers_ua, log_queue_ref):
     
     return personalities
 
+# --- 캐릭터명 매칭 데이터 로드 ---
+def load_character_name_matching():
+    """Matching_names.csv에서 캐릭터명 매칭 데이터를 로드합니다."""
+    name_mapping = {}
+    try:
+        matching_csv_path = os.path.join(SCRIPT_DIR, "Matching_names.csv")
+        if os.path.exists(matching_csv_path):
+            df = pd.read_csv(matching_csv_path, encoding='utf-8-sig')
+            for _, row in df.iterrows():
+                if len(row) >= 2:
+                    eng_name = row.iloc[0]  # 첫 번째 컬럼 (영어명)
+                    kor_name = row.iloc[1]  # 두 번째 컬럼 (한국어명)
+                    if pd.notna(eng_name) and pd.notna(kor_name):
+                        name_mapping[eng_name] = kor_name
+    except Exception as e:
+        print(f"Error loading character name matching: {e}")
+    return name_mapping
+
 def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selected_output_dir):
-    """개선된 스크레이핑 로직 - Personalities 포함"""
+    """개선된 스크레이핑 로직 - 전체 퍼스널리티 페이지와 개별 캐릭터 페이지 병행"""
     threading.current_thread().log_queue_ref = log_queue_ref
     threading.current_thread().progress_queue_ref = progress_queue_ref
     
@@ -186,10 +280,20 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
     
     setup_directories()
     log_queue_ref.put(f"Output directory set to: {selected_output_dir}")
-    log_queue_ref.put(f"Fetching page: {TARGET_URL}")
+    log_queue_ref.put("Loading character name and personality matching data...")
+    
+    # 캐릭터명 매칭 데이터 로드
+    name_mapping = load_character_name_matching()
+    log_queue_ref.put(f"Loaded {len(name_mapping)} character name mappings")
     
     headers_ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
     
+    # 1. 전체 퍼스널리티 페이지에서 데이터 가져오기
+    log_queue_ref.put("Step 1: Fetching personality data from comprehensive page...")
+    all_personalities_data = scrape_all_personalities_from_page(headers_ua, log_queue_ref)
+    
+    # 2. 메인 캐릭터 페이지 스크래핑
+    log_queue_ref.put(f"Step 2: Fetching main character data from: {TARGET_URL}")
     try:
         response = requests.get(TARGET_URL, headers=headers_ua, timeout=15)
         response.raise_for_status()
@@ -246,6 +350,9 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
             name_tag = name_rarity_cell.find('a')
             name = name_tag.text.strip() if name_tag else ""
             
+            # 캐릭터명 매칭 (영어 -> 한국어)
+            korean_name = name_mapping.get(name, name)
+            
             rarity_text = name_rarity_cell.get_text(separator=" ").strip()
             rarity_match = re.search(r'\d(?:~\d)?★(?:\s*\S+)?', rarity_text)
             rarity = rarity_match.group(0).strip() if rarity_match else ""
@@ -263,27 +370,35 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
             
             release_date = cells[3].text.strip()
 
-            # 2. Personalities 스크레이핑 (새로 추가된 기능)
+            # 2. Personalities 데이터 가져오기
             personalities = []
-            detail_href = name_tag.get('href') if name_tag else None
-            if detail_href:
-                detail_url = urljoin(BASE_URL, detail_href)
-                personalities = scrape_personalities(detail_url, headers_ua, log_queue_ref)
-                time.sleep(0.5)  # 서버 부담 줄이기 위한 지연
+            
+            # 우선 전체 퍼스널리티 페이지에서 찾기
+            if name in all_personalities_data:
+                personalities = all_personalities_data[name]
+                log_queue_ref.put(f"Found personalities from main page for '{name}': {', '.join(personalities)}")
+            else:
+                # 개별 캐릭터 페이지에서 스크래핑 (백업)
+                detail_href = name_tag.get('href') if name_tag else None
+                if detail_href:
+                    detail_url = urljoin(BASE_URL, detail_href)
+                    personalities = scrape_personalities(detail_url, headers_ua, log_queue_ref)
+                    time.sleep(0.5)  # 서버 부담 줄이기 위한 지연
 
             if name or icon_local_path:
                 all_character_data_for_final_excel.append({
                     "icon_path": icon_local_path,
                     "icon_filename": icon_filename,
                     "name": name,
+                    "korean_name": korean_name,  # 한국어 캐릭터명 추가
                     "rarity": rarity,
-                    "personalities": personalities,  # 새로 추가된 필드
+                    "personalities": personalities,
                     "element_equipment_paths": element_equipment_icon_paths,
                     "element_equipment_alts": element_equipment_icon_alts,
                     "release_date": release_date
                 })
                 if current_progress % 10 == 0:
-                    log_queue_ref.put(f"Row {current_progress}: Parsed & Downloaded for '{name}' (Personalities: {len(personalities)})")
+                    log_queue_ref.put(f"Row {current_progress}: Parsed & Downloaded for '{korean_name}' ({name}) - Personalities: {len(personalities)}")
         except Exception as e:
             log_queue_ref.put(f"Row {current_progress}: Error parsing: {e}")
             continue
@@ -304,8 +419,8 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
     
     max_ee_icons = max([len(d["element_equipment_paths"]) for d in all_character_data_for_final_excel] or [0])
 
-    # 헤더에 Personalities 추가
-    headers_excel = ["Icon", "Icon Filename", "Name", "Rarity", "Personalities"]
+    # 헤더에 Korean Name과 Personalities 추가
+    headers_excel = ["Icon", "Icon Filename", "Name", "Korean Name", "Rarity", "Personalities"]
     for i in range(max_ee_icons):
         headers_excel.extend([f"Elem/Equip {i+1} Icon", f"Elem/Equip {i+1} Alt"])
     headers_excel.append("Release Date")
@@ -315,8 +430,9 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
     ws.column_dimensions[get_column_letter(1)].width = 12  # Icon
     ws.column_dimensions[get_column_letter(2)].width = 35  # Icon Filename
     ws.column_dimensions[get_column_letter(3)].width = 30  # Name
-    ws.column_dimensions[get_column_letter(4)].width = 15  # Rarity
-    ws.column_dimensions[get_column_letter(5)].width = 50  # Personalities (넓게)
+    ws.column_dimensions[get_column_letter(4)].width = 30  # Korean Name
+    ws.column_dimensions[get_column_letter(5)].width = 15  # Rarity
+    ws.column_dimensions[get_column_letter(6)].width = 50  # Personalities (넓게)
     
     ee_start_col = 6
     for i in range(max_ee_icons):
@@ -338,10 +454,12 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
                 pass
         current_col += 1
         
-        # Icon Filename, Name, Rarity
+        # Icon Filename, Name, Korean Name, Rarity, Personalities
         ws.cell(row=row_idx_excel, column=current_col, value=char_data.get("icon_filename", ""))
         current_col += 1
         ws.cell(row=row_idx_excel, column=current_col, value=char_data.get("name", ""))
+        current_col += 1
+        ws.cell(row=row_idx_excel, column=current_col, value=char_data.get("korean_name", ""))
         current_col += 1
         ws.cell(row=row_idx_excel, column=current_col, value=char_data.get("rarity", ""))
         current_col += 1
