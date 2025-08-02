@@ -5,6 +5,19 @@
 
 import streamlit as st
 import os
+import pandas as pd
+import random
+import time
+import re
+import base64
+import html
+from pathlib import Path
+import unicodedata
+import streamlit.components.v1 as components
+from typing import List, Dict, Any
+
+# 전역 설정
+BASE_DIR = Path(__file__).parent.resolve()
 
 # 페이지 설정
 st.set_page_config(
@@ -13,6 +26,277 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ===============================================
+# 유틸리티 함수들
+# ===============================================
+
+def safe_icon_to_data_uri(path: str) -> str:
+    """아이콘 경로를 data URI로 안전하게 변환"""
+    placeholder = "data:image/gif;base64,R0lGODlhEAAQAIABAP///wAAACH5BAEKAAEALAAAAAAQABAAAAIijI+py+0Po5yUFQA7"
+    
+    def normalize_path(p: str) -> str:
+        p = unicodedata.normalize("NFKC", p)
+        return p.replace("\\", "/").strip().lstrip("\ufeff").replace("\u00A0", "")
+
+    path = normalize_path(path or '')
+    if not path or pd.isna(path):
+        return placeholder
+    if path.startswith(("http://", "https://", "data:image")):
+        return path
+    
+    abs_path = BASE_DIR / path
+    try:
+        if abs_path.exists() and abs_path.is_file():
+            with open(abs_path, "rb") as f:
+                data = base64.b64encode(f.read()).decode()
+                ext = abs_path.suffix.lower()
+                if ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
+                    mime_type = f"image/{ext[1:]}" if ext != '.jpg' else "image/jpeg"
+                    return f"data:{mime_type};base64,{data}"
+    except:
+        pass
+    return placeholder
+
+def load_quiz_data():
+    """퀴즈용 데이터 로드"""
+    csv_file = "eden_roulette_data_with_personalities.csv"
+    if not os.path.exists(csv_file):
+        csv_file = "eden_roulette_data.csv"
+    
+    if not os.path.exists(csv_file):
+        return None
+    
+    try:
+        df = pd.read_csv(csv_file, encoding='utf-8-sig')
+        # 빈 값들을 처리
+        df = df.fillna('')
+        return df
+    except Exception as e:
+        st.error(f"데이터 로드 오류: {e}")
+        return None
+
+def load_roulette_data():
+    """룰렛용 데이터 로드"""
+    csv_file = "eden_roulette_data_with_personalities.csv"
+    if not os.path.exists(csv_file):
+        st.error("룰렛 데이터 파일이 없습니다. eden_roulette_data_with_personalities.csv 파일을 확인하세요.")
+        return None, None
+    
+    try:
+        df = pd.read_csv(csv_file, encoding='utf-8-sig')
+        
+        # 컬럼 매핑
+        column_map = {
+            '이름': '캐릭터명',
+            '캐릭터아이콘경로': '캐릭터아이콘경로', 
+            '희귀도': '희귀도',
+            '속성명': '속성명리스트',
+            '속성아이콘': '속성_아이콘경로리스트',
+            '무기명': '무기명리스트', 
+            '무기아이콘': '무기_아이콘경로리스트',
+            '방어구명': '',
+            '방어구아이콘': ''
+        }
+        
+        # 필요한 컬럼들 확인
+        for k_kor, v_eng in column_map.items():
+            if v_eng and v_eng not in df.columns:
+                st.error(f"필요한 컬럼 '{v_eng}'이 없습니다.")
+                return None, None
+                
+        return df, column_map
+    except Exception as e:
+        st.error(f"룰렛 데이터 로드 오류: {e}")
+        return None, None
+
+# ===============================================
+# 퀴즈쇼 관련 함수들
+# ===============================================
+
+def create_silhouette_html(image_path: str, char_name: str = "") -> str:
+    """캐릭터 실루엣 HTML 생성"""
+    icon_data = safe_icon_to_data_uri(image_path)
+    return f'''
+    <div style="text-align: center; margin: 20px 0;">
+        <div style="width: 150px; height: 150px; margin: 0 auto; position: relative; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+            <img src="{icon_data}" 
+                 style="width: 100%; height: 100%; object-fit: contain; filter: brightness(0) opacity(0.8);" 
+                 alt="{char_name} 실루엣">
+        </div>
+        <p style="margin-top: 10px; font-style: italic; color: #666;">실루엣을 보고 캐릭터를 맞춰보세요!</p>
+    </div>
+    '''
+
+def run_quiz_mode(df: pd.DataFrame, mode: str):
+    """퀴즈 모드 실행"""
+    if df is None or len(df) == 0:
+        st.error("퀴즈 데이터가 없습니다.")
+        return
+    
+    # 세션 상태 초기화
+    if f'quiz_{mode}_data' not in st.session_state:
+        st.session_state[f'quiz_{mode}_data'] = {
+            'score': 0,
+            'total': 0,
+            'current_question': None,
+            'show_answer': False
+        }
+    
+    quiz_data = st.session_state[f'quiz_{mode}_data']
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        # 점수 표시
+        st.markdown(f"### 🎯 {mode} 퀴즈")
+        st.metric("점수", f"{quiz_data['score']}/{quiz_data['total']}", 
+                 f"{quiz_data['score']/max(quiz_data['total'], 1)*100:.1f}%" if quiz_data['total'] > 0 else "0%")
+        
+        if st.button("새 문제", key=f"new_{mode}"):
+            # 새 문제 생성
+            char = df.sample(1).iloc[0]
+            quiz_data['current_question'] = char
+            quiz_data['show_answer'] = False
+            
+            # 4개 선택지 생성 (정답 포함)
+            correct_answer = char['캐릭터명']
+            wrong_answers = df[df['캐릭터명'] != correct_answer]['캐릭터명'].sample(3).tolist()
+            all_options = [correct_answer] + wrong_answers
+            random.shuffle(all_options)
+            quiz_data['options'] = all_options
+            st.rerun()
+        
+        if quiz_data['current_question'] is not None:
+            char = quiz_data['current_question']
+            
+            # 모드별 문제 출제
+            if mode == "이름 맞히기":
+                if '캐릭터아이콘경로' in char and char['캐릭터아이콘경로']:
+                    icon_data = safe_icon_to_data_uri(char['캐릭터아이콘경로'])
+                    st.markdown(f'<div style="text-align: center;"><img src="{icon_data}" style="width: 150px; height: 150px; object-fit: contain;"></div>', unsafe_allow_html=True)
+                st.write("이 캐릭터의 이름은?")
+                
+            elif mode == "실루엣 맞히기":
+                if '캐릭터아이콘경로' in char and char['캐릭터아이콘경로']:
+                    st.markdown(create_silhouette_html(char['캐릭터아이콘경로'], char['캐릭터명']), unsafe_allow_html=True)
+                
+            elif mode == "희귀도 맞히기":
+                st.write(f"**{char['캐릭터명']}**의 희귀도는?")
+                
+            elif mode == "속성 맞히기":
+                st.write(f"**{char['캐릭터명']}**의 속성은?")
+                
+            elif mode == "무기 맞히기":
+                st.write(f"**{char['캐릭터명']}**의 무기는?")
+            
+            # 선택지 표시
+            if not quiz_data['show_answer']:
+                selected = st.radio("정답을 선택하세요:", quiz_data['options'], key=f"quiz_{mode}_radio")
+                
+                if st.button("정답 확인", key=f"check_{mode}"):
+                    correct = char['캐릭터명'] if mode == "이름 맞히기" or mode == "실루엣 맞히기" else char.get(mode.split()[0], "")
+                    
+                    quiz_data['total'] += 1
+                    if selected == correct:
+                        quiz_data['score'] += 1
+                        st.success("🎉 정답입니다!")
+                    else:
+                        st.error(f"❌ 오답입니다. 정답: {correct}")
+                    
+                    quiz_data['show_answer'] = True
+                    st.rerun()
+            
+            else:
+                # 정답 후 캐릭터 정보 표시
+                st.success("문제 완료!")
+                st.json({
+                    "이름": char['캐릭터명'],
+                    "희귀도": char.get('희귀도', ''),
+                    "속성": char.get('속성명리스트', ''),
+                    "무기": char.get('무기명리스트', ''),
+                })
+
+# ===============================================
+# 룰렛 관련 함수들
+# ===============================================
+
+def create_character_card(char_data: pd.Series, column_map: dict) -> str:
+    """캐릭터 카드 HTML 생성"""
+    name = char_data[column_map['이름']]
+    rarity = char_data[column_map['희귀도']]
+    icon_data = safe_icon_to_data_uri(char_data[column_map['캐릭터아이콘경로']])
+    
+    return f'''
+    <div style="border: 2px solid #ddd; border-radius: 15px; padding: 20px; margin: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center;">
+        <img src="{icon_data}" style="width: 100px; height: 100px; object-fit: contain; border-radius: 10px; margin-bottom: 10px;">
+        <h3 style="margin: 10px 0; color: #FFD700;">{name}</h3>
+        <p style="margin: 5px 0;"><strong>희귀도:</strong> {rarity}</p>
+        <p style="margin: 5px 0;"><strong>속성:</strong> {char_data.get(column_map['속성명'], '')}</p>
+        <p style="margin: 5px 0;"><strong>무기:</strong> {char_data.get(column_map['무기명'], '')}</p>
+    </div>
+    '''
+
+def run_roulette():
+    """룰렛 게임 실행"""
+    df, column_map = load_roulette_data()
+    if df is None:
+        return
+    
+    st.markdown("### 🎰 캐릭터 룰렛")
+    
+    # 필터링 옵션
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        available_rarities = sorted(df[column_map['희귀도']].dropna().unique())
+        selected_rarities = st.multiselect("희귀도 필터", available_rarities)
+    
+    with col2:
+        available_attrs = []
+        for attr_list in df[column_map['속성명']].dropna():
+            if attr_list:
+                available_attrs.extend([x.strip() for x in str(attr_list).split('|')])
+        available_attrs = sorted(set(available_attrs))
+        selected_attrs = st.multiselect("속성 필터", available_attrs)
+    
+    with col3:
+        available_weapons = []
+        for weapon_list in df[column_map['무기명']].dropna():
+            if weapon_list:
+                available_weapons.extend([x.strip() for x in str(weapon_list).split('|')])
+        available_weapons = sorted(set(available_weapons))
+        selected_weapons = st.multiselect("무기 필터", available_weapons)
+    
+    # 필터링 적용
+    filtered_df = df.copy()
+    if selected_rarities:
+        filtered_df = filtered_df[filtered_df[column_map['희귀도']].isin(selected_rarities)]
+    if selected_attrs:
+        filtered_df = filtered_df[filtered_df[column_map['속성명']].str.contains('|'.join(selected_attrs), na=False)]
+    if selected_weapons:
+        filtered_df = filtered_df[filtered_df[column_map['무기명']].str.contains('|'.join(selected_weapons), na=False)]
+    
+    st.write(f"필터 결과: {len(filtered_df)}명의 캐릭터")
+    
+    # 룰렛 실행
+    if st.button("🎲 룰렛 돌리기!", key="roulette_spin"):
+        if len(filtered_df) > 0:
+            winner = filtered_df.sample(1).iloc[0]
+            st.session_state['roulette_winner'] = winner
+            
+            # 애니메이션 효과
+            with st.spinner("룰렛 돌리는 중..."):
+                time.sleep(1)
+            
+            st.balloons()
+            st.success("🎉 당첨!")
+    
+    # 당첨 결과 표시
+    if 'roulette_winner' in st.session_state:
+        winner = st.session_state['roulette_winner']
+        st.markdown("### 🏆 당첨 캐릭터")
+        st.markdown(create_character_card(winner, column_map), unsafe_allow_html=True)
 
 # CSS 스타일
 st.markdown("""
@@ -110,27 +394,34 @@ def main():
     </div>
     """, unsafe_allow_html=True)
     
-    # 사이드바 - 빠른 실행
-    st.sidebar.header("🚀 빠른 실행")
+    # 사이드바 - 빠른 네비게이션
+    st.sidebar.header("🚀 빠른 네비게이션")
     
-    if st.sidebar.button("🎯 퀴즈쇼 시작", use_container_width=True):
-        if os.path.exists("eden_quiz_app.py"):
-            st.sidebar.success("퀴즈쇼 앱을 실행합니다...")
-            st.sidebar.code("streamlit run eden_quiz_app.py --server.port 8502", language="bash")
-        else:
-            st.sidebar.error("eden_quiz_app.py 파일이 없습니다.")
+    if st.sidebar.button("🎯 퀴즈쇼 게임", use_container_width=True):
+        st.sidebar.success("🎮 게임 센터의 퀴즈쇼 탭으로 이동하세요!")
+        st.sidebar.info("탭 2: 게임 센터 > 퀴즈쇼에서 바로 플레이할 수 있습니다.")
     
-    if st.sidebar.button("🎰 기존 룰렛 앱", use_container_width=True):
-        if os.path.exists("streamlit_eden_restructure.py"):
-            st.sidebar.success("룰렛 앱을 실행합니다...")
-            st.sidebar.code("streamlit run streamlit_eden_restructure.py --server.port 8503", language="bash")
-        else:
-            st.sidebar.error("streamlit_eden_restructure.py 파일이 없습니다.")
+    if st.sidebar.button("🎰 캐릭터 룰렛", use_container_width=True):
+        st.sidebar.success("🎰 게임 센터의 룰렛 탭으로 이동하세요!")
+        st.sidebar.info("탭 2: 게임 센터 > 캐릭터 룰렛에서 바로 플레이할 수 있습니다.")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📊 퀴즈 모드")
+    st.sidebar.markdown("- 🏷️ 이름 맞히기")
+    st.sidebar.markdown("- 👤 실루엣 맞히기") 
+    st.sidebar.markdown("- ⭐ 희귀도 맞히기")
+    st.sidebar.markdown("- 🔥 속성 맞히기")
+    st.sidebar.markdown("- ⚔️ 무기 맞히기")
+    
+    st.sidebar.markdown("### 🎰 룰렛 기능")
+    st.sidebar.markdown("- 🔍 캐릭터 필터링")
+    st.sidebar.markdown("- 🎲 랜덤 뽑기")
+    st.sidebar.markdown("- 🏆 결과 표시")
     
 
     
     # 메인 컨텐츠
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 프로젝트 상태", "🎮 앱 런처", "🔧 도구", "📖 가이드"])
+    tab1, tab2, tab3, tab4 = st.tabs(["📊 프로젝트 상태", "🎮 게임 센터", "📱 배포 정보", "📖 가이드"])
     
     with tab1:
         st.header("📊 프로젝트 파일 상태")
@@ -174,54 +465,40 @@ def main():
             st.success("✅ 모든 파일이 정상적으로 준비되었습니다!")
     
     with tab2:
-        st.header("🎮 애플리케이션 런처")
+        st.header("🎮 Another Eden 게임 센터")
         
-        col1, col2 = st.columns(2)
+        # 게임 선택 탭
+        game_tab1, game_tab2 = st.tabs(["🎯 퀴즈쇼", "🎰 캐릭터 룰렛"])
         
-        with col1:
+        with game_tab1:
             st.markdown("""
-            <div class="feature-card">
-                <h3>🎯 퀴즈쇼 앱</h3>
-                <p>새로 개발된 인터랙티브 퀴즈 게임</p>
+            <div class="quiz-container">
+                <h2>🎯 Another Eden 퀴즈쇼</h2>
+                <p>다양한 모드로 캐릭터 지식을 테스트해보세요!</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if os.path.exists("eden_quiz_app.py"):
-                st.success("✅ 파일 준비됨")
-                if st.button("퀴즈쇼 실행", key="quiz_main", use_container_width=True):
-                    st.code("streamlit run eden_quiz_app.py --server.port 8502")
-                    st.info("위 명령어를 터미널에서 실행하세요!")
-            else:
-                st.error("❌ eden_quiz_app.py 파일 없음")
+            # 퀴즈 모드 선택
+            quiz_modes = ["이름 맞히기", "실루엣 맞히기", "희귀도 맞히기", "속성 맞히기", "무기 맞히기"]
+            selected_mode = st.selectbox("퀴즈 모드 선택", quiz_modes, key="quiz_mode_select")
             
-            st.markdown("**주요 기능:**")
-            st.markdown("- 🏷️ 이름 맞추기")
-            st.markdown("- ⭐ 희귀도 맞추기")
-            st.markdown("- 🔥 속성 맞추기")
-            st.markdown("- ⚔️ 무기 맞추기")
-            st.markdown("- 👤 실루엣 퀴즈")
+            # 퀴즈 데이터 로드
+            quiz_df = load_quiz_data()
+            if quiz_df is not None:
+                run_quiz_mode(quiz_df, selected_mode)
+            else:
+                st.error("퀴즈 데이터를 불러올 수 없습니다. CSV 파일을 확인하세요.")
         
-        with col2:
+        with game_tab2:
             st.markdown("""
-            <div class="feature-card">
-                <h3>🎰 기존 룰렛 앱</h3>
-                <p>캐릭터 필터링 및 룰렛 기능</p>
+            <div class="quiz-container">
+                <h2>🎰 캐릭터 룰렛</h2>
+                <p>필터를 설정하고 랜덤 캐릭터를 뽑아보세요!</p>
             </div>
             """, unsafe_allow_html=True)
             
-            if os.path.exists("streamlit_eden_restructure.py"):
-                st.success("✅ 파일 준비됨")
-                if st.button("룰렛 앱 실행", key="roulette_main", use_container_width=True):
-                    st.code("streamlit run streamlit_eden_restructure.py --server.port 8503")
-                    st.info("위 명령어를 터미널에서 실행하세요!")
-            else:
-                st.error("❌ streamlit_eden_restructure.py 파일 없음")
-            
-            st.markdown("**주요 기능:**")
-            st.markdown("- 🔍 캐릭터 필터링")
-            st.markdown("- 🎰 슬롯머신 룰렛")
-            st.markdown("- 🎴 캐릭터 카드 표시")
-            st.markdown("- 📊 통계 정보")
+            # 룰렛 실행
+            run_roulette()
     
     with tab3:
         st.header("📱 배포 정보")
