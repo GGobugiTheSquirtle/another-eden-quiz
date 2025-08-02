@@ -49,6 +49,7 @@ def safe_icon_to_data_uri(path: str) -> str:
     if path.startswith(("http://", "https://", "data:image")):
         return path
     
+    # 이미지 파일 경로 처리
     abs_path = BASE_DIR / path
     try:
         if abs_path.exists() and abs_path.is_file():
@@ -61,6 +62,40 @@ def safe_icon_to_data_uri(path: str) -> str:
     except:
         pass
     return placeholder
+
+def get_character_image(char_name: str) -> str:
+    """캐릭터 이름으로 이미지 경로 찾기"""
+    # character_art/icons 폴더에서 캐릭터 이미지 찾기
+    icons_dir = BASE_DIR / "character_art" / "icons"
+    if not icons_dir.exists():
+        return ""
+    
+    # 캐릭터명 정규화 (공백 제거, 소문자)
+    search_name = char_name.replace(" ", "").lower()
+    
+    # 모든 이미지 파일 검색
+    image_files = list(icons_dir.glob("*.png"))
+    
+    # 1. 정확한 매칭 시도
+    for file in image_files:
+        file_name = file.stem.lower()
+        if search_name in file_name or file_name in search_name:
+            return str(file)
+    
+    # 2. 부분 매칭 시도 (캐릭터명의 일부가 파일명에 포함)
+    for file in image_files:
+        file_name = file.stem.lower()
+        # 캐릭터명의 각 단어를 확인
+        char_words = search_name.split()
+        for word in char_words:
+            if len(word) > 2 and word in file_name:
+                return str(file)
+    
+    # 3. 첫 번째 이미지 파일 반환 (임시)
+    if image_files:
+        return str(image_files[0])
+    
+    return ""
 
 def load_quiz_data():
     """퀴즈용 데이터 로드"""
@@ -76,6 +111,10 @@ def load_quiz_data():
         # 빈 값들을 문자열로 변환하여 안전하게 처리
         for col in df.columns:
             df[col] = df[col].fillna('').astype(str)
+        
+        # 이미지 경로 추가
+        df['이미지경로'] = df['캐릭터명'].apply(get_character_image)
+        
         return df
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
@@ -95,10 +134,13 @@ def load_roulette_data():
         for col in df.columns:
             df[col] = df[col].fillna('').astype(str)
         
+        # 이미지 경로 추가
+        df['이미지경로'] = df['캐릭터명'].apply(get_character_image)
+        
         # 컬럼 매핑
         column_map = {
             '이름': '캐릭터명',
-            '캐릭터아이콘경로': '캐릭터아이콘경로', 
+            '캐릭터아이콘경로': '이미지경로', 
             '희귀도': '희귀도',
             '속성명': '속성명리스트',
             '속성아이콘': '속성_아이콘경로리스트',
@@ -159,8 +201,8 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
     with col2:
         # 점수 표시
         st.markdown(f"### 🎯 {mode} 퀴즈")
-        st.metric("점수", f"{quiz_data['score']}/{quiz_data['total']}", 
-                 f"{quiz_data['score']/max(quiz_data['total'], 1)*100:.1f}%" if quiz_data['total'] > 0 else "0%")
+        accuracy = quiz_data['score']/max(quiz_data['total'], 1)*100 if quiz_data['total'] > 0 else 0
+        st.metric("점수", f"{quiz_data['score']}/{quiz_data['total']}", f"{accuracy:.1f}%")
         
         if st.button("새 문제", key=f"new_{mode}"):
             # 새 문제 생성
@@ -168,12 +210,57 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
             quiz_data['current_question'] = char
             quiz_data['show_answer'] = False
             
-            # 4개 선택지 생성 (정답 포함)
-            correct_answer = char['캐릭터명']
-            wrong_answers = df[df['캐릭터명'] != correct_answer]['캐릭터명'].sample(3).tolist()
-            all_options = [correct_answer] + wrong_answers
-            random.shuffle(all_options)
-            quiz_data['options'] = all_options
+            # 모드별 선택지 생성
+            if mode in ["이름 맞히기", "실루엣 맞히기"]:
+                correct_answer = char['캐릭터명']
+                wrong_answers = df[df['캐릭터명'] != correct_answer]['캐릭터명'].sample(3).tolist()
+                all_options = [correct_answer] + wrong_answers
+                random.shuffle(all_options)
+                quiz_data['options'] = all_options
+            elif mode == "희귀도 맞히기":
+                correct_rarity = char.get('희귀도', '')
+                all_rarities = df['희귀도'].unique()
+                wrong_rarities = [r for r in all_rarities if r != correct_rarity]
+                if len(wrong_rarities) >= 3:
+                    wrong_rarities = random.sample(wrong_rarities, 3)
+                else:
+                    wrong_rarities = wrong_rarities + ['3★', '4★', '5★']
+                all_options = [correct_rarity] + wrong_rarities[:3]
+                random.shuffle(all_options)
+                quiz_data['options'] = all_options
+            elif mode == "속성 맞히기":
+                if char.get('속성명리스트'):
+                    correct_attrs = char['속성명리스트'].split('|')
+                    all_attrs = []
+                    for attr_list in df['속성명리스트'].dropna():
+                        if attr_list:
+                            all_attrs.extend([x.strip() for x in attr_list.split('|')])
+                    all_attrs = list(set(all_attrs))
+                    wrong_attrs = [attr for attr in all_attrs if attr not in correct_attrs]
+                    if len(wrong_attrs) >= 3:
+                        wrong_attrs = random.sample(wrong_attrs, 3)
+                    else:
+                        wrong_attrs = ['화', '수', '지', '풍', '빛', '어둠']
+                    all_options = correct_attrs + wrong_attrs[:3]
+                    random.shuffle(all_options)
+                    quiz_data['options'] = all_options[:4]
+            elif mode == "무기 맞히기":
+                if char.get('무기명리스트'):
+                    correct_weapons = char['무기명리스트'].split('|')
+                    all_weapons = []
+                    for weapon_list in df['무기명리스트'].dropna():
+                        if weapon_list:
+                            all_weapons.extend([x.strip() for x in weapon_list.split('|')])
+                    all_weapons = list(set(all_weapons))
+                    wrong_weapons = [weapon for weapon in all_weapons if weapon not in correct_weapons]
+                    if len(wrong_weapons) >= 3:
+                        wrong_weapons = random.sample(wrong_weapons, 3)
+                    else:
+                        wrong_weapons = ['검', '창', '도끼', '활', '지팡이', '단검']
+                    all_options = correct_weapons + wrong_weapons[:3]
+                    random.shuffle(all_options)
+                    quiz_data['options'] = all_options[:4]
+            
             st.rerun()
         
         if quiz_data['current_question'] is not None:
@@ -181,14 +268,14 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
             
             # 모드별 문제 출제
             if mode == "이름 맞히기":
-                if '캐릭터아이콘경로' in char and char['캐릭터아이콘경로']:
-                    icon_data = safe_icon_to_data_uri(char['캐릭터아이콘경로'])
+                if char['이미지경로']:
+                    icon_data = safe_icon_to_data_uri(char['이미지경로'])
                     st.markdown(f'<div style="text-align: center;"><img src="{icon_data}" style="width: 150px; height: 150px; object-fit: contain;"></div>', unsafe_allow_html=True)
                 st.write("이 캐릭터의 이름은?")
                 
             elif mode == "실루엣 맞히기":
-                if '캐릭터아이콘경로' in char and char['캐릭터아이콘경로']:
-                    st.markdown(create_silhouette_html(char['캐릭터아이콘경로'], char['캐릭터명']), unsafe_allow_html=True)
+                if char['이미지경로']:
+                    st.markdown(create_silhouette_html(char['이미지경로'], char['캐릭터명']), unsafe_allow_html=True)
                 
             elif mode == "희귀도 맞히기":
                 st.write(f"**{char['캐릭터명']}**의 희귀도는?")
@@ -201,20 +288,30 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
             
             # 선택지 표시
             if not quiz_data['show_answer']:
-                selected = st.radio("정답을 선택하세요:", quiz_data['options'], key=f"quiz_{mode}_radio")
-                
-                if st.button("정답 확인", key=f"check_{mode}"):
-                    correct = char['캐릭터명'] if mode == "이름 맞히기" or mode == "실루엣 맞히기" else char.get(mode.split()[0], "")
+                if 'options' in quiz_data:
+                    selected = st.radio("정답을 선택하세요:", quiz_data['options'], key=f"quiz_{mode}_radio")
                     
-                    quiz_data['total'] += 1
-                    if selected == correct:
-                        quiz_data['score'] += 1
-                        st.success("🎉 정답입니다!")
-                    else:
-                        st.error(f"❌ 오답입니다. 정답: {correct}")
-                    
-                    quiz_data['show_answer'] = True
-                    st.rerun()
+                    if st.button("정답 확인", key=f"check_{mode}"):
+                        if mode in ["이름 맞히기", "실루엣 맞히기"]:
+                            correct = char['캐릭터명']
+                        elif mode == "희귀도 맞히기":
+                            correct = char.get('희귀도', '')
+                        elif mode == "속성 맞히기":
+                            correct = char.get('속성명리스트', '').split('|')[0] if char.get('속성명리스트') else ''
+                        elif mode == "무기 맞히기":
+                            correct = char.get('무기명리스트', '').split('|')[0] if char.get('무기명리스트') else ''
+                        else:
+                            correct = ""
+                        
+                        quiz_data['total'] += 1
+                        if selected == correct:
+                            quiz_data['score'] += 1
+                            st.success("🎉 정답입니다!")
+                        else:
+                            st.error(f"❌ 오답입니다. 정답: {correct}")
+                        
+                        quiz_data['show_answer'] = True
+                        st.rerun()
             
             else:
                 # 정답 후 캐릭터 정보 표시
@@ -224,6 +321,7 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
                     "희귀도": char.get('희귀도', ''),
                     "속성": char.get('속성명리스트', ''),
                     "무기": char.get('무기명리스트', ''),
+                    "퍼스널리티": char.get('개성(퍼스널리티)', '')
                 })
 
 # ===============================================
@@ -243,6 +341,7 @@ def create_character_card(char_data: pd.Series, column_map: dict) -> str:
         <p style="margin: 5px 0;"><strong>희귀도:</strong> {rarity}</p>
         <p style="margin: 5px 0;"><strong>속성:</strong> {char_data.get(column_map['속성명'], '')}</p>
         <p style="margin: 5px 0;"><strong>무기:</strong> {char_data.get(column_map['무기명'], '')}</p>
+        <p style="margin: 5px 0;"><strong>퍼스널리티:</strong> {char_data.get('개성(퍼스널리티)', '')}</p>
     </div>
     '''
 
@@ -349,6 +448,15 @@ st.markdown("""
         border-radius: 8px;
         border-left: 4px solid #FFD700;
         margin: 1rem 0;
+    }
+    
+    .quiz-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        color: white;
+        text-align: center;
     }
 </style>
 """, unsafe_allow_html=True)
