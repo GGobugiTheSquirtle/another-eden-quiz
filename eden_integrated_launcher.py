@@ -63,18 +63,26 @@ def safe_icon_to_data_uri(path: str) -> str:
         pass
     return placeholder
 
-def get_character_image(char_name: str) -> str:
-    """캐릭터 이름으로 이미지 경로 찾기"""
+def get_character_image(char_name: str, char_index: int = None) -> str:
+    """캐릭터 이름으로 이미지 경로 찾기 (개선된 버전)"""
     # character_art/icons 폴더에서 캐릭터 이미지 찾기
     icons_dir = BASE_DIR / "character_art" / "icons"
     if not icons_dir.exists():
         return ""
     
-    # 캐릭터명 정규화 (공백 제거, 소문자)
-    search_name = char_name.replace(" ", "").lower()
-    
     # 모든 이미지 파일 검색
     image_files = list(icons_dir.glob("*.png"))
+    if not image_files:
+        return ""
+    
+    # 캐릭터 인덱스 기반 이미지 할당 (중복 방지)
+    if char_index is not None:
+        # 캐릭터 인덱스를 이미지 파일 수로 나눈 나머지로 고유 이미지 할당
+        image_index = char_index % len(image_files)
+        return str(image_files[image_index])
+    
+    # 캐릭터명 정규화 (공백 제거, 소문자)
+    search_name = char_name.replace(" ", "").lower()
     
     # 1. 정확한 매칭 시도
     for file in image_files:
@@ -91,11 +99,12 @@ def get_character_image(char_name: str) -> str:
             if len(word) > 2 and word in file_name:
                 return str(file)
     
-    # 3. 첫 번째 이미지 파일 반환 (임시)
-    if image_files:
-        return str(image_files[0])
-    
-    return ""
+    # 3. 해시 기반 고유 이미지 할당
+    import hashlib
+    char_hash = hashlib.md5(char_name.encode()).hexdigest()
+    hash_int = int(char_hash[:8], 16)
+    image_index = hash_int % len(image_files)
+    return str(image_files[image_index])
 
 def load_quiz_data():
     """퀴즈용 데이터 로드"""
@@ -112,8 +121,8 @@ def load_quiz_data():
         for col in df.columns:
             df[col] = df[col].fillna('').astype(str)
         
-        # 이미지 경로 추가
-        df['이미지경로'] = df['캐릭터명'].apply(get_character_image)
+        # 이미지 경로 추가 (캐릭터 인덱스 기반)
+        df['이미지경로'] = df.apply(lambda row: get_character_image(row['캐릭터명'], row.name), axis=1)
         
         return df
     except Exception as e:
@@ -134,8 +143,8 @@ def load_roulette_data():
         for col in df.columns:
             df[col] = df[col].fillna('').astype(str)
         
-        # 이미지 경로 추가
-        df['이미지경로'] = df['캐릭터명'].apply(get_character_image)
+        # 이미지 경로 추가 (캐릭터 인덱스 기반)
+        df['이미지경로'] = df.apply(lambda row: get_character_image(row['캐릭터명'], row.name), axis=1)
         
         # 컬럼 매핑
         column_map = {
@@ -166,21 +175,21 @@ def load_roulette_data():
 # ===============================================
 
 def create_silhouette_html(image_path: str, char_name: str = "") -> str:
-    """캐릭터 실루엣 HTML 생성"""
+    """캐릭터 실루엣 HTML 생성 (개선된 버전)"""
     icon_data = safe_icon_to_data_uri(image_path)
     return f'''
     <div style="text-align: center; margin: 20px 0;">
-        <div style="width: 150px; height: 150px; margin: 0 auto; position: relative; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+        <div style="width: 200px; height: 200px; margin: 0 auto; position: relative; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); border-radius: 15px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
             <img src="{icon_data}" 
-                 style="width: 100%; height: 100%; object-fit: contain; filter: brightness(0) opacity(0.8);" 
+                 style="width: 100%; height: 100%; object-fit: contain; filter: brightness(0) contrast(1.5) opacity(0.9);" 
                  alt="{char_name} 실루엣">
         </div>
-        <p style="margin-top: 10px; font-style: italic; color: #666;">실루엣을 보고 캐릭터를 맞춰보세요!</p>
+        <p style="margin-top: 15px; font-style: italic; color: #666; font-size: 16px; font-weight: 500;">실루엣을 보고 캐릭터를 맞춰보세요!</p>
     </div>
     '''
 
 def run_quiz_mode(df: pd.DataFrame, mode: str):
-    """퀴즈 모드 실행"""
+    """퀴즈 모드 실행 (개선된 GUI)"""
     if df is None or len(df) == 0:
         st.error("퀴즈 데이터가 없습니다.")
         return
@@ -196,15 +205,31 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
     
     quiz_data = st.session_state[f'quiz_{mode}_data']
     
+    # 헤더 섹션
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; text-align: center; color: white;">
+        <h2 style="margin: 0; color: #FFD700;">🎯 {mode} 퀴즈</h2>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">캐릭터 지식을 테스트해보세요!</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 점수 및 컨트롤 섹션
     col1, col2, col3 = st.columns([1, 2, 1])
     
-    with col2:
-        # 점수 표시
-        st.markdown(f"### 🎯 {mode} 퀴즈")
+    with col1:
+        # 점수 카드
         accuracy = quiz_data['score']/max(quiz_data['total'], 1)*100 if quiz_data['total'] > 0 else 0
-        st.metric("점수", f"{quiz_data['score']}/{quiz_data['total']}", f"{accuracy:.1f}%")
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 1.5rem; border-radius: 10px; text-align: center; color: white; margin-bottom: 1rem;">
+            <h3 style="margin: 0; color: #FFD700;">점수</h3>
+            <h2 style="margin: 10px 0;">{quiz_data['score']}/{quiz_data['total']}</h2>
+            <p style="margin: 0; font-size: 18px;">{accuracy:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if st.button("새 문제", key=f"new_{mode}"):
+    with col2:
+        # 새 문제 버튼
+        if st.button("🎲 새 문제", key=f"new_{mode}", use_container_width=True):
             # 새 문제 생성
             char = df.sample(1).iloc[0]
             quiz_data['current_question'] = char
@@ -266,63 +291,101 @@ def run_quiz_mode(df: pd.DataFrame, mode: str):
         if quiz_data['current_question'] is not None:
             char = quiz_data['current_question']
             
+            # 문제 카드
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 15px; margin: 2rem 0; text-align: center; color: white;">
+                <h3 style="margin: 0 0 1rem 0; color: #FFD700;">문제</h3>
+            """, unsafe_allow_html=True)
+            
             # 모드별 문제 출제
             if mode == "이름 맞히기":
                 if char['이미지경로']:
                     icon_data = safe_icon_to_data_uri(char['이미지경로'])
-                    st.markdown(f'<div style="text-align: center;"><img src="{icon_data}" style="width: 150px; height: 150px; object-fit: contain;"></div>', unsafe_allow_html=True)
-                st.write("이 캐릭터의 이름은?")
+                    st.markdown(f'<div style="text-align: center; margin: 1rem 0;"><img src="{icon_data}" style="width: 200px; height: 200px; object-fit: contain; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);"></div>', unsafe_allow_html=True)
+                st.markdown('<p style="font-size: 18px; font-weight: 600; margin: 1rem 0;">이 캐릭터의 이름은?</p>', unsafe_allow_html=True)
                 
             elif mode == "실루엣 맞히기":
                 if char['이미지경로']:
                     st.markdown(create_silhouette_html(char['이미지경로'], char['캐릭터명']), unsafe_allow_html=True)
                 
             elif mode == "희귀도 맞히기":
-                st.write(f"**{char['캐릭터명']}**의 희귀도는?")
+                st.markdown(f'<p style="font-size: 18px; font-weight: 600; margin: 1rem 0;"><strong>{char["캐릭터명"]}</strong>의 희귀도는?</p>', unsafe_allow_html=True)
                 
             elif mode == "속성 맞히기":
-                st.write(f"**{char['캐릭터명']}**의 속성은?")
+                st.markdown(f'<p style="font-size: 18px; font-weight: 600; margin: 1rem 0;"><strong>{char["캐릭터명"]}</strong>의 속성은?</p>', unsafe_allow_html=True)
                 
             elif mode == "무기 맞히기":
-                st.write(f"**{char['캐릭터명']}**의 무기는?")
+                st.markdown(f'<p style="font-size: 18px; font-weight: 600; margin: 1rem 0;"><strong>{char["캐릭터명"]}</strong>의 무기는?</p>', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
             
             # 선택지 표시
             if not quiz_data['show_answer']:
                 if 'options' in quiz_data:
-                    selected = st.radio("정답을 선택하세요:", quiz_data['options'], key=f"quiz_{mode}_radio")
+                    st.markdown('<h4 style="margin: 1rem 0; color: #333;">정답을 선택하세요:</h4>', unsafe_allow_html=True)
                     
-                    if st.button("정답 확인", key=f"check_{mode}"):
-                        if mode in ["이름 맞히기", "실루엣 맞히기"]:
-                            correct = char['캐릭터명']
-                        elif mode == "희귀도 맞히기":
-                            correct = char.get('희귀도', '')
-                        elif mode == "속성 맞히기":
-                            correct = char.get('속성명리스트', '').split('|')[0] if char.get('속성명리스트') else ''
-                        elif mode == "무기 맞히기":
-                            correct = char.get('무기명리스트', '').split('|')[0] if char.get('무기명리스트') else ''
-                        else:
-                            correct = ""
+                    # 선택지를 그리드로 표시
+                    cols = st.columns(2)
+                    selected = None
+                    
+                    for i, option in enumerate(quiz_data['options']):
+                        col_idx = i % 2
+                        with cols[col_idx]:
+                            if st.button(option, key=f"option_{mode}_{i}", use_container_width=True):
+                                selected = option
+                    
+                    if selected:
+                        st.markdown(f'<p style="margin: 1rem 0; padding: 1rem; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;"><strong>선택한 답:</strong> {selected}</p>', unsafe_allow_html=True)
                         
-                        quiz_data['total'] += 1
-                        if selected == correct:
-                            quiz_data['score'] += 1
-                            st.success("🎉 정답입니다!")
-                        else:
-                            st.error(f"❌ 오답입니다. 정답: {correct}")
-                        
-                        quiz_data['show_answer'] = True
-                        st.rerun()
+                        if st.button("✅ 정답 확인", key=f"check_{mode}", use_container_width=True):
+                            if mode in ["이름 맞히기", "실루엣 맞히기"]:
+                                correct = char['캐릭터명']
+                            elif mode == "희귀도 맞히기":
+                                correct = char.get('희귀도', '')
+                            elif mode == "속성 맞히기":
+                                correct = char.get('속성명리스트', '').split('|')[0] if char.get('속성명리스트') else ''
+                            elif mode == "무기 맞히기":
+                                correct = char.get('무기명리스트', '').split('|')[0] if char.get('무기명리스트') else ''
+                            else:
+                                correct = ""
+                            
+                            quiz_data['total'] += 1
+                            if selected == correct:
+                                quiz_data['score'] += 1
+                                st.success("🎉 정답입니다!")
+                            else:
+                                st.error(f"❌ 오답입니다. 정답: {correct}")
+                            
+                            quiz_data['show_answer'] = True
+                            st.rerun()
             
             else:
                 # 정답 후 캐릭터 정보 표시
-                st.success("문제 완료!")
-                st.json({
-                    "이름": char['캐릭터명'],
-                    "희귀도": char.get('희귀도', ''),
-                    "속성": char.get('속성명리스트', ''),
-                    "무기": char.get('무기명리스트', ''),
-                    "퍼스널리티": char.get('개성(퍼스널리티)', '')
-                })
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 1.5rem; border-radius: 10px; margin: 1rem 0; text-align: center; color: white;">
+                    <h3 style="margin: 0; color: #FFD700;">🎉 문제 완료!</h3>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 캐릭터 정보 카드
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    if char['이미지경로']:
+                        icon_data = safe_icon_to_data_uri(char['이미지경로'])
+                        st.markdown(f'<div style="text-align: center;"><img src="{icon_data}" style="width: 150px; height: 150px; object-fit: contain; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.3);"></div>', unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown(f"""
+                    <div style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+                        <h4 style="margin: 0 0 1rem 0; color: #333;">캐릭터 정보</h4>
+                        <p style="margin: 0.5rem 0;"><strong>이름:</strong> {char['캐릭터명']}</p>
+                        <p style="margin: 0.5rem 0;"><strong>희귀도:</strong> {char.get('희귀도', '')}</p>
+                        <p style="margin: 0.5rem 0;"><strong>속성:</strong> {char.get('속성명리스트', '')}</p>
+                        <p style="margin: 0.5rem 0;"><strong>무기:</strong> {char.get('무기명리스트', '')}</p>
+                        <p style="margin: 0.5rem 0;"><strong>퍼스널리티:</strong> {char.get('개성(퍼스널리티)', '')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # ===============================================
 # 룰렛 관련 함수들
@@ -346,19 +409,30 @@ def create_character_card(char_data: pd.Series, column_map: dict) -> str:
     '''
 
 def run_roulette():
-    """룰렛 게임 실행"""
+    """룰렛 게임 실행 (개선된 GUI)"""
     df, column_map = load_roulette_data()
     if df is None:
         return
     
-    st.markdown("### 🎰 캐릭터 룰렛")
+    # 헤더 섹션
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; text-align: center; color: white;">
+        <h2 style="margin: 0; color: #FFD700;">🎰 캐릭터 룰렛</h2>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">필터를 설정하고 랜덤 캐릭터를 뽑아보세요!</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # 필터링 옵션
+    # 필터링 섹션
+    st.markdown("""
+    <div style="background: white; padding: 2rem; border-radius: 15px; margin-bottom: 2rem; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+        <h3 style="margin: 0 0 1rem 0; color: #333;">🔍 필터 설정</h3>
+    """, unsafe_allow_html=True)
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
         available_rarities = sorted(df[column_map['희귀도']].dropna().unique())
-        selected_rarities = st.multiselect("희귀도 필터", available_rarities)
+        selected_rarities = st.multiselect("⭐ 희귀도 필터", available_rarities)
     
     with col2:
         available_attrs = []
@@ -366,7 +440,7 @@ def run_roulette():
             if attr_list:
                 available_attrs.extend([x.strip() for x in str(attr_list).split('|')])
         available_attrs = sorted(set(available_attrs))
-        selected_attrs = st.multiselect("속성 필터", available_attrs)
+        selected_attrs = st.multiselect("🔥 속성 필터", available_attrs)
     
     with col3:
         available_weapons = []
@@ -374,7 +448,9 @@ def run_roulette():
             if weapon_list:
                 available_weapons.extend([x.strip() for x in str(weapon_list).split('|')])
         available_weapons = sorted(set(available_weapons))
-        selected_weapons = st.multiselect("무기 필터", available_weapons)
+        selected_weapons = st.multiselect("⚔️ 무기 필터", available_weapons)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # 필터링 적용
     filtered_df = df.copy()
@@ -385,25 +461,37 @@ def run_roulette():
     if selected_weapons:
         filtered_df = filtered_df[filtered_df[column_map['무기명']].str.contains('|'.join(selected_weapons), na=False)]
     
-    st.write(f"필터 결과: {len(filtered_df)}명의 캐릭터")
+    # 필터 결과 표시
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 1rem; border-radius: 10px; margin-bottom: 2rem; text-align: center; color: white;">
+        <h4 style="margin: 0;">📊 필터 결과: {len(filtered_df)}명의 캐릭터</h4>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # 룰렛 실행
-    if st.button("🎲 룰렛 돌리기!", key="roulette_spin"):
-        if len(filtered_df) > 0:
-            winner = filtered_df.sample(1).iloc[0]
-            st.session_state['roulette_winner'] = winner
-            
-            # 애니메이션 효과
-            with st.spinner("룰렛 돌리는 중..."):
-                time.sleep(1)
-            
-            st.balloons()
-            st.success("🎉 당첨!")
+    # 룰렛 실행 섹션
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        if st.button("🎲 룰렛 돌리기!", key="roulette_spin", use_container_width=True):
+            if len(filtered_df) > 0:
+                winner = filtered_df.sample(1).iloc[0]
+                st.session_state['roulette_winner'] = winner
+                
+                # 애니메이션 효과
+                with st.spinner("룰렛 돌리는 중..."):
+                    time.sleep(1)
+                
+                st.balloons()
+                st.success("🎉 당첨!")
     
     # 당첨 결과 표시
     if 'roulette_winner' in st.session_state:
         winner = st.session_state['roulette_winner']
-        st.markdown("### 🏆 당첨 캐릭터")
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 2rem; border-radius: 15px; margin: 2rem 0; text-align: center; color: white;">
+            <h3 style="margin: 0; color: #333;">🏆 당첨 캐릭터</h3>
+        </div>
+        """, unsafe_allow_html=True)
         st.markdown(create_character_card(winner, column_map), unsafe_allow_html=True)
 
 # CSS 스타일
