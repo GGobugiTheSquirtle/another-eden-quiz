@@ -66,19 +66,19 @@ def check_file_status():
     
     # 필수 파일들
     essential_files = {
-        "eden_roulette_data.csv": "룰렛/퀴즈 데이터",
+        "eden_roulette_data_with_personalities.csv": "룰렛/퀴즈 데이터",
         "Matching_names.csv": "캐릭터명 매핑",
         "another_eden_characters_detailed.xlsx": "상세 캐릭터 데이터",
         "character_art/": "캐릭터 이미지 폴더"
     }
     
-    # 새로 생성된 파일들
-    new_files = {
+    # 앱 파일들
+    app_files = {
         "eden_quiz_app.py": "퀴즈쇼 앱",
-        "eden_personality_scraper.py": "개선된 스크레이퍼"
+        "streamlit_eden_restructure.py": "룰렛 앱"
     }
     
-    all_files = {**essential_files, **new_files}
+    all_files = {**essential_files, **app_files}
     
     for file_path, description in all_files.items():
         if os.path.exists(file_path):
@@ -127,22 +127,7 @@ def main():
         else:
             st.sidebar.error("streamlit_eden_restructure.py 파일이 없습니다.")
     
-    if st.sidebar.button("🔧 개선된 스크레이퍼", use_container_width=True):
-        if os.path.exists("eden_personality_scraper.py"):
-            st.sidebar.success("스크레이퍼를 실행합니다...")
-            st.sidebar.code("python eden_personality_scraper.py", language="bash")
-        else:
-            st.sidebar.error("eden_personality_scraper.py 파일이 없습니다.")
-    
-    st.sidebar.markdown("---")
-    
-    if st.sidebar.button("🚀 통합 데이터 생성", use_container_width=True, type="primary"):
-        if os.path.exists("eden_personality_scraper.py"):
-            st.sidebar.success("통합 데이터 생성을 시작합니다...")
-            st.sidebar.code("python eden_personality_scraper.py --integrated", language="bash")
-            st.sidebar.info("이 명령어는 모든 필요한 데이터를 한 번에 생성합니다!")
-        else:
-            st.sidebar.error("eden_personality_scraper.py 파일이 없습니다.")
+
     
     # 메인 컨텐츠
     tab1, tab2, tab3, tab4 = st.tabs(["📊 프로젝트 상태", "🎮 앱 런처", "🔧 도구", "📖 가이드"])
@@ -239,60 +224,51 @@ def main():
             st.markdown("- 📊 통계 정보")
     
     with tab3:
-        st.header("🔧 개발 도구")
+        st.header("📱 배포 정보")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📥 데이터 수집")
+            st.subheader("🌐 웹 배포")
             
-            if os.path.exists("eden_personality_scraper.py"):
-                st.success("✅ 개선된 스크레이퍼 준비됨")
-                if st.button("Personality 스크레이퍼 실행", use_container_width=True):
-                    st.code("python eden_personality_scraper.py")
-                    st.info("Personalities 데이터를 포함한 완전한 스크레이핑을 수행합니다.")
-            else:
-                st.error("❌ eden_personality_scraper.py 파일 없음")
+            st.markdown("""
+            **Streamlit Community Cloud 배포**
+            - 무료 호스팅 서비스
+            - GitHub 연동으로 자동 배포
+            - 실시간 코드 업데이트 반영
+            """)
             
-            st.markdown("**개선 사항:**")
-            st.markdown("- ✨ Personalities 데이터 추가")
-            st.markdown("- 🔄 자동 CSV 생성")
-            st.markdown("- 📊 향상된 진행률 표시")
-            st.markdown("- 🛡️ 에러 처리 강화")
-            st.markdown("- 🚀 통합 데이터 생성 기능")
-            
-            st.markdown("---")
-            
-            # 통합 데이터 생성 섹션
-            st.subheader("🚀 통합 데이터 생성")
-            st.markdown("한 번에 모든 필요한 데이터를 생성합니다.")
-            
-            if st.button("통합 데이터 생성 실행", key="integrated_gen", use_container_width=True, type="primary"):
-                st.code("python eden_personality_scraper.py --integrated", language="bash")
+            if st.button("배포 가이드 보기", use_container_width=True):
                 st.info("""
-                **생성되는 파일들:**
-                - another_eden_characters_detailed.xlsx
-                - eden_roulette_data_with_personalities.csv  
-                - character_personalities.csv
-                
-                모든 파일이 자동으로 현재 디렉토리에 복사됩니다!
+                **배포 단계:**
+                1. GitHub 저장소 확인
+                2. Streamlit Community Cloud 접속
+                3. 저장소 연결 및 앱 배포
+                4. 공개 URL 생성 완료
                 """)
         
         with col2:
-            st.subheader("📋 기존 도구들")
+            st.subheader("📊 프로젝트 정보")
             
-            existing_tools = [
-                ("another_eden_gui_scraper copy 2.py", "최신 GUI 스크레이퍼"),
-                ("eden_data_preprocess_gui_with personality.py", "데이터 전처리 도구"),
-                ("통합적용.PY", "통합 적용 스크립트")
-            ]
+            project_info = {
+                "프로젝트명": "Another Eden Quiz Show",
+                "개발 언어": "Python 3.9+",
+                "웹 프레임워크": "Streamlit",
+                "주요 라이브러리": "pandas, requests, openpyxl",
+                "데이터 소스": "anothereden.wiki"
+            }
             
-            for tool_file, description in existing_tools:
-                if os.path.exists(tool_file):
-                    st.success(f"✅ {tool_file}")
-                    st.caption(description)
-                else:
-                    st.error(f"❌ {tool_file}")
+            for key, value in project_info.items():
+                st.write(f"**{key}**: {value}")
+                
+            st.markdown("---")
+            
+            st.subheader("✨ 주요 기능")
+            st.markdown("- 🎯 5가지 퀴즈 모드")
+            st.markdown("- 🎰 캐릭터 룰렛")
+            st.markdown("- 🔍 캐릭터 검색 및 필터링")
+            st.markdown("- 📊 퍼스널리티 데이터")
+            st.markdown("- 🖼️ 캐릭터 이미지 표시")
     
     with tab4:
         st.header("📖 사용 가이드")
@@ -300,23 +276,7 @@ def main():
         st.markdown("""
         ## 🚀 빠른 시작 가이드
         
-        ### 1단계: 데이터 수집
-        
-        **방법 1: 통합 데이터 생성 (권장)**
-        ```bash
-        python eden_personality_scraper.py --integrated
-        ```
-        - 모든 필요한 데이터를 한 번에 생성
-        - 자동으로 현재 디렉토리에 파일 복사
-        
-        **방법 2: GUI 스크레이퍼**
-        ```bash
-        python eden_personality_scraper.py
-        ```
-        1. 출력 폴더 선택 후 "캐릭터 데이터 수집" 버튼 클릭
-        2. Personalities 데이터를 포함한 완전한 데이터 수집 완료
-        
-        ### 2단계: 앱 실행
+        ### 앱 실행 방법
         1. **퀴즈쇼 앱**: 
            ```bash
            streamlit run eden_quiz_app.py --server.port 8502
@@ -326,7 +286,7 @@ def main():
            streamlit run streamlit_eden_restructure.py --server.port 8503
            ```
         
-        ### 3단계: 즐기기!
+        ### 즐기기!
         - 🎯 다양한 퀴즈 모드로 캐릭터 지식 테스트
         - 🎰 룰렛으로 랜덤 캐릭터 뽑기
         - 🔍 필터링으로 원하는 캐릭터 찾기
@@ -335,19 +295,19 @@ def main():
         st.markdown("---")
         
         st.markdown("""
-        ## 🆕 새로운 기능들
+        ## 🎮 앱 기능들
         
-        ### 🎮 퀴즈쇼 앱의 특징
+        ### 🎯 퀴즈쇼 앱
         - **5가지 퀴즈 모드**: 이름, 희귀도, 속성, 무기, 실루엣
         - **실시간 점수 시스템**: 정답률 추적
         - **시각적 힌트**: 캐릭터 이미지 및 실루엣
         - **상세 정보 표시**: 정답 후 캐릭터 정보 제공
         
-        ### 🔧 개선된 스크레이퍼
-        - **Personalities 데이터**: 캐릭터별 성격 특성 정보
-        - **자동 CSV 생성**: Excel → CSV 변환 자동화
-        - **에러 처리 강화**: 네트워크 오류 대응 개선
-        - **진행률 개선**: 더 정확한 스크레이핑 상태 표시
+        ### 🎰 룰렛 앱
+        - **슬롯머신 스타일**: 시각적인 룰렛 애니메이션
+        - **캐릭터 필터링**: 희귀도, 속성, 무기별 필터
+        - **캐릭터 카드**: 상세 정보 표시
+        - **퍼스널리티 데이터**: 캐릭터별 성격 특성
         """)
         
         st.markdown("---")
@@ -357,14 +317,14 @@ def main():
         
         ### 자주 발생하는 문제들
         
-        **Q: eden_roulette_data.csv 파일이 없다고 나옵니다.**
-        A: 스크레이퍼를 먼저 실행하여 데이터를 생성하세요.
+        **Q: 앱이 실행되지 않습니다.**
+        A: Python과 필요한 라이브러리가 설치되어 있는지 확인하세요.
         
         **Q: 캐릭터 이미지가 표시되지 않습니다.**
         A: character_art 폴더와 하위 이미지들이 있는지 확인하세요.
         
-        **Q: Personalities 데이터가 비어있습니다.**
-        A: 개선된 스크레이퍼(eden_personality_scraper.py)를 사용하세요.
+        **Q: 데이터가 로드되지 않습니다.**
+        A: 필요한 CSV/Excel 파일들이 있는지 확인하세요.
         
         **Q: 포트 충돌로 앱이 실행되지 않습니다.**
         A: 다른 포트 번호를 사용하세요 (--server.port 8504)
