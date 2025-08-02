@@ -467,10 +467,14 @@ def show_home_page():
     col1, col2 = st.columns(2)
     
     with col1:
+        if st.button("🎯 퀴즈쇼 시작", key="quiz_start_button", use_container_width=True, type="primary"):
+            st.session_state['selected_game'] = "🎯 퀴즈쇼"
+            st.rerun()
+        
         st.markdown("""
         <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
             <h2 style="margin: 0; color: #FFD700; font-size: 2.5rem;">🎯 퀴즈쇼</h2>
-            <p style="margin: 1rem 0; font-size: 1.2rem;">다양한 모드로 캐릭터 지식을 테스트해보세요!</p>
+            <p style="margin: 1rem 0; font-size: 1.2rem;">퀴즈를 풀고 캐릭터 지식을 테스트하세요!</p>
             <ul style="text-align: left; margin: 1rem 0;">
                 <li>🏷️ 이름 맞히기</li>
                 <li>👤 실루엣 맞히기</li>
@@ -482,6 +486,10 @@ def show_home_page():
         """, unsafe_allow_html=True)
     
     with col2:
+        if st.button("🎰 캐릭터 룰렛 시작", key="roulette_start_button", use_container_width=True, type="primary"):
+            st.session_state['selected_game'] = "🎰 캐릭터 룰렛"
+            st.rerun()
+        
         st.markdown("""
         <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
             <h2 style="margin: 0; color: #FFD700; font-size: 2.5rem;">🎰 캐릭터 룰렛</h2>
@@ -501,13 +509,15 @@ def show_quiz_page():
     st.markdown("""
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem; border-radius: 20px; margin: 2rem 0; text-align: center; color: white;">
         <h1 style="margin: 0; color: #FFD700; font-size: 3rem;">🎯 Another Eden 퀴즈쇼</h1>
-        <p style="margin: 1rem 0; font-size: 1.5rem; opacity: 0.9;">다양한 모드로 캐릭터 지식을 테스트해보세요!</p>
+        <p style="margin: 1rem 0; font-size: 1.5rem; opacity: 0.9;">퀴즈를 풀고 캐릭터 지식을 테스트하세요!</p>
     </div>
     """, unsafe_allow_html=True)
     
+    # 퀴즈 모드 선택
     quiz_modes = ["이름 맞히기", "실루엣 맞히기", "희귀도 맞히기", "속성 맞히기", "무기 맞히기"]
     selected_mode = st.selectbox("퀴즈 모드 선택", quiz_modes, key="quiz_mode_select_fullscreen")
     
+    # 퀴즈 데이터 로드 및 실행
     quiz_df = load_quiz_data()
     if quiz_df is not None:
         run_quiz_mode_fullscreen(quiz_df, selected_mode)
@@ -591,11 +601,19 @@ def main():
     # 사이드바 - 간단한 네비게이션
     st.sidebar.header("🎮 게임 메뉴")
     
-    game_mode = st.sidebar.selectbox(
-        "게임을 선택하세요",
-        ["🏠 홈", "🎯 퀴즈쇼", "🎰 캐릭터 룰렛", "📖 가이드"],
-        index=0
-    )
+    # 세션 상태에서 선택된 게임 확인
+    if 'selected_game' in st.session_state:
+        game_mode = st.session_state['selected_game']
+        # 홈으로 돌아가기 버튼
+        if st.sidebar.button("🏠 홈으로 돌아가기", use_container_width=True):
+            st.session_state.pop('selected_game', None)
+            st.rerun()
+    else:
+        game_mode = st.sidebar.selectbox(
+            "게임을 선택하세요",
+            ["🏠 홈", "🎯 퀴즈쇼", "🎰 캐릭터 룰렛", "📖 가이드"],
+            index=0
+        )
     
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🎯 퀴즈 모드")
