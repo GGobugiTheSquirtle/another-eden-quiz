@@ -157,6 +157,7 @@ def scrape_all_personalities_from_page(headers_ua, log_queue_ref):
         dict: {character_name: [personalities]} 형태의 딕셔너리
     """
     personality_mapping = load_personality_matching()
+    name_mapping = load_character_name_matching()
     character_personalities = {}
     
     try:
@@ -200,11 +201,22 @@ def scrape_all_personalities_from_page(headers_ua, log_queue_ref):
                             
                             char_name = link.get_text(strip=True)
                             if char_name and len(char_name) > 1:
-                                # 캐릭터에 퍼스널리티 추가
-                                if char_name not in character_personalities:
-                                    character_personalities[char_name] = []
-                                if personality_kor not in character_personalities[char_name]:
-                                    character_personalities[char_name].append(personality_kor)
+                                # 스타일 접미사를 고려한 캐릭터명 정리 (AS/ES 등 제거)
+                                # 딕셔너리 키는 기본 영어명으로 통일 (매칭 시 일관성을 위해)
+                                base_char_name = char_name
+                                style_patterns = [r'\s+(AS)$', r'\s+(ES)$', r'\s+(NS)$', 
+                                                r'\s+(Another\s*Style)$', r'\s+(Extra\s*Style)$']
+                                for pattern in style_patterns:
+                                    match = re.search(pattern, char_name, re.IGNORECASE)
+                                    if match:
+                                        base_char_name = char_name[:match.start()]
+                                        break
+                                
+                                # 캐릭터에 퍼스널리티 추가 (기본명을 키로 사용)
+                                if base_char_name not in character_personalities:
+                                    character_personalities[base_char_name] = []
+                                if personality_kor not in character_personalities[base_char_name]:
+                                    character_personalities[base_char_name].append(personality_kor)
         
         log_queue_ref.put(f"Found personality data for {len(character_personalities)} characters")
         
@@ -312,6 +324,49 @@ def load_character_name_matching():
         print(f"Error loading character name matching: {e}")
     return name_mapping
 
+def convert_character_name_with_style(english_name, name_mapping):
+    """
+    캐릭터명을 한국어로 변환하되, AS/ES/NS 등의 스타일 접미사를 고려합니다.
+    예: "Shion ES" → "시온 ES", "Aldo AS" → "알도 AS"
+    
+    Args:
+        english_name (str): 영어 캐릭터명 (스타일 포함 가능)
+        name_mapping (dict): 영어-한국어 캐릭터명 매핑 딕셔너리
+    
+    Returns:
+        str: 한국어로 변환된 캐릭터명
+    """
+    if not english_name:
+        return english_name
+    
+    # 스타일 접미사 패턴 (AS, ES, NS, Another Style 등)
+    style_patterns = [
+        r'\s+(AS)$',           # " AS"
+        r'\s+(ES)$',           # " ES" 
+        r'\s+(NS)$',           # " NS"
+        r'\s+(Another\s*Style)$',  # " Another Style"
+        r'\s+(Extra\s*Style)$',    # " Extra Style"
+        r'\s+(Manifestation)$',    # " Manifestation"
+        r'\s+(Alter)$',            # " Alter"
+    ]
+    
+    # 스타일 접미사 찾기
+    base_name = english_name
+    style_suffix = ""
+    
+    for pattern in style_patterns:
+        match = re.search(pattern, english_name, re.IGNORECASE)
+        if match:
+            style_suffix = " " + match.group(1)
+            base_name = english_name[:match.start()]
+            break
+    
+    # 기본 이름을 한국어로 변환
+    korean_base_name = name_mapping.get(base_name, base_name)
+    
+    # 한국어 기본 이름 + 스타일 접미사
+    return korean_base_name + style_suffix
+
 def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selected_output_dir):
     """개선된 스크레이핑 로직 - 전체 퍼스널리티 페이지와 개별 캐릭터 페이지 병행"""
     threading.current_thread().log_queue_ref = log_queue_ref
@@ -393,8 +448,8 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
             name_tag = name_rarity_cell.find('a')
             name = name_tag.text.strip() if name_tag else ""
             
-            # 캐릭터명 매칭 (영어 -> 한국어)
-            korean_name = name_mapping.get(name, name)
+            # 캐릭터명 매칭 (영어 -> 한국어, 스타일 접미사 고려)
+            korean_name = convert_character_name_with_style(name, name_mapping)
             
             rarity_text = name_rarity_cell.get_text(separator=" ").strip()
             rarity_match = re.search(r'\d(?:~\d)?★(?:\s*\S+)?', rarity_text)
@@ -416,10 +471,20 @@ def scraping_logic_with_personalities(log_queue_ref, progress_queue_ref, selecte
             # 2. Personalities 데이터 가져오기
             personalities = []
             
-            # 우선 전체 퍼스널리티 페이지에서 찾기
-            if name in all_personalities_data:
-                personalities = all_personalities_data[name]
-                log_queue_ref.put(f"Found personalities from main page for '{name}': {', '.join(personalities)}")
+            # 기본 캐릭터명 추출 (AS/ES 등 스타일 접미사 제거)
+            base_name = name
+            style_patterns = [r'\s+(AS)$', r'\s+(ES)$', r'\s+(NS)$', 
+                            r'\s+(Another\s*Style)$', r'\s+(Extra\s*Style)$']
+            for pattern in style_patterns:
+                match = re.search(pattern, name, re.IGNORECASE)
+                if match:
+                    base_name = name[:match.start()]
+                    break
+            
+            # 우선 전체 퍼스널리티 페이지에서 찾기 (기본명으로 검색)
+            if base_name in all_personalities_data:
+                personalities = all_personalities_data[base_name]
+                log_queue_ref.put(f"Found personalities from main page for '{name}' (base: '{base_name}'): {', '.join(personalities)}")
             else:
                 # 개별 캐릭터 페이지에서 스크래핑 (백업)
                 detail_href = name_tag.get('href') if name_tag else None
