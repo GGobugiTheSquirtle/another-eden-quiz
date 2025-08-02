@@ -29,6 +29,19 @@ This repository provides a **complete ecosystem** for *Another Eden* character d
 ---
 ## 🚀 Quick Start
 
+### 🎯 가장 쉬운 방법 (Windows 사용자)
+**더블클릭으로 실행:**
+1. `quick_start.bat` 파일을 더블클릭
+2. 원하는 옵션 선택 (1-6)
+3. 자동으로 모든 환경 체크 및 실행
+
+**개별 실행 파일:**
+- `run_launcher.bat` - 통합 런처 실행
+- `run_quiz_app.bat` - 퀴즈쇼 앱 실행  
+- `run_roulette_app.bat` - 룰렛 앱 실행
+- `run_scraper.bat` - 데이터 스크래퍼 실행
+- `github_upload.bat` - GitHub 업로드
+
 ### 1. Launch the Control Center
 ```bash
 streamlit run eden_integrated_launcher.py
