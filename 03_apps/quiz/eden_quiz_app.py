@@ -413,9 +413,9 @@ def safe_icon_to_data_uri(path: str) -> str:
 @st.cache_data
 def load_character_data():
     """캐릭터 데이터 로드"""
-    csv_path = CSV_DIR / "eden_quiz_data_fixed.csv"  # 정확한 경로 사용
+    csv_path = CSV_DIR / "eden_quiz_data.csv"  # 스크래퍼가 생성하는 파일명으로 수정
     if not csv_path.exists():
-        st.error(f"eden_quiz_data_fixed.csv 파일이 없습니다. 먼저 데이터 생성 스크립트를 실행해주세요.\n경로: {csv_path}")
+        st.error(f"eden_quiz_data.csv 파일이 없습니다. 먼저 데이터 생성 스크립트를 실행해주세요.\n경로: {csv_path}")
         st.info("📡 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
         st.stop()
     
