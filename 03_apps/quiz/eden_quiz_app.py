@@ -457,6 +457,11 @@ class QuizGame:
             # 3성 이하 캐릭터만 필터링
             filtered_df = filtered_df[filtered_df['희귀도'].str.contains(r'[1-3]★', na=False)]
         
+        # 필터링된 결과가 없으면 전체 데이터에서 선택
+        if len(filtered_df) == 0:
+            print("⚠️ 3성 이하 캐릭터가 없어서 전체 캐릭터에서 선택합니다.")
+            filtered_df = self.df.copy()
+        
         if len(filtered_df) < n:
             return filtered_df.to_dict('records')
         return filtered_df.sample(n=n).to_dict('records')
@@ -465,6 +470,18 @@ class QuizGame:
         """퀴즈 문제 생성"""
         # 3성 이하 캐릭터로 제한
         characters = self.get_random_characters(4, max_rarity=3)
+        
+        # 캐릭터가 없으면 에러 처리
+        if not characters:
+            return {
+                'question': "데이터가 부족합니다. 스크래퍼를 실행해주세요.",
+                'options': ['데이터 없음'],
+                'correct_answer': '데이터 없음',
+                'hint_image': '',
+                'character_info': {},
+                'quiz_type': quiz_type
+            }
+        
         correct_char = random.choice(characters)
         
         if quiz_type == "guess_name":
@@ -870,15 +887,15 @@ def main():
         }[x]
     )
     
+    # 점수 및 통계 표시
+    game = st.session_state.quiz_game
+    
     # 게임 설정
     st.sidebar.subheader("⚙️ 게임 설정")
     enable_timer = st.sidebar.checkbox("⏰ 타이머 사용", value=False)
     if enable_timer:
         time_limit = st.sidebar.slider("시간 제한 (초)", 10, 60, 30)
         game.time_limit = time_limit
-    
-    # 점수 및 통계 표시
-    game = st.session_state.quiz_game
     if game.total_questions > 0:
         accuracy = (game.session_stats['correct_answers'] / (game.session_stats['correct_answers'] + game.session_stats['wrong_answers'])) * 100 if (game.session_stats['correct_answers'] + game.session_stats['wrong_answers']) > 0 else 0
         combo_bonus = game.get_combo_bonus()
@@ -933,6 +950,12 @@ def main():
     # 퀴즈 표시
     if st.session_state.current_quiz:
         quiz = st.session_state.current_quiz
+        
+        # 데이터 없음 처리
+        if quiz.get('correct_answer') == '데이터 없음':
+            st.error("📊 데이터가 부족합니다. 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성해주세요.")
+            st.info("💡 현재 3성 이하 캐릭터가 없거나 데이터가 비어있습니다.")
+            return
         
         # 타이머 표시
         if enable_timer and not st.session_state.quiz_answered:
