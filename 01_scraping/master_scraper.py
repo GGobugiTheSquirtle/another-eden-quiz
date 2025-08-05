@@ -224,6 +224,72 @@ class MasterScraper:
             print(f"⚠️ 알 수 없는 오류로 이미지 다운로드 실패: {full_image_url} ({e})")
             return None
     
+    def download_icon(self, icon_url, alt_text, subfolder):
+        """아이콘 다운로드 및 저장"""
+        if not icon_url:
+            return ""
+        
+        try:
+            # URL 정규화
+            if not icon_url.startswith('http'):
+                icon_url = urljoin(BASE_URL, icon_url)
+            
+            # 파일명 생성
+            parsed_url = urlparse(icon_url)
+            query_params = parse_qs(parsed_url.query)
+            icon_name_from_f = query_params.get('f', [None])[0]
+            
+            if icon_name_from_f:
+                icon_name = os.path.basename(unquote(icon_name_from_f))
+            else:
+                icon_name = os.path.basename(unquote(parsed_url.path.split('?')[0]))
+            
+            # 확장자 처리
+            if not icon_name or icon_name.lower() in ["thumb.php", "index.php"]:
+                try:
+                    head_resp = requests.head(icon_url, timeout=3, allow_redirects=True)
+                    head_resp.raise_for_status()
+                    content_type = head_resp.headers.get('Content-Type')
+                    if content_type:
+                        guessed_ext = mimetypes.guess_extension(content_type.split(';')[0])
+                        if guessed_ext:
+                            ext = guessed_ext
+                        else:
+                            ext = ".png"
+                    else:
+                        ext = ".png"
+                except requests.exceptions.RequestException:
+                    ext = ".png"
+            else:
+                base_name, ext = os.path.splitext(icon_name)
+                if not ext or len(ext) > 5:
+                    ext = ".png"
+            
+            # 아이콘 파일명 생성
+            icon_filename = f"{alt_text.replace(' ', '_')}{ext}"
+            icon_filename = self.sanitize_filename(icon_filename)
+            
+            # 저장 경로 설정
+            icon_dir = IMAGE_DIR / subfolder
+            icon_dir.mkdir(exist_ok=True)
+            save_path = icon_dir / icon_filename
+            save_path = self.get_unique_filename(save_path)
+            
+            # 아이콘 다운로드
+            response = requests.get(icon_url, headers=self.headers, timeout=30)
+            response.raise_for_status()
+            
+            # 파일 저장
+            with open(save_path, 'wb') as f:
+                f.write(response.content)
+            
+            print(f"  🎯 아이콘 저장: {save_path.name}")
+            return str(save_path.relative_to(self.project_root).as_posix())
+            
+        except Exception as e:
+            print(f"⚠️ 아이콘 다운로드 실패 ({icon_url}): {e}")
+            return ""
+    
     def scrape_character_list(self):
         """캐릭터 목록 페이지 스크래핑"""
         print("📡 캐릭터 목록 스크래핑 중...")

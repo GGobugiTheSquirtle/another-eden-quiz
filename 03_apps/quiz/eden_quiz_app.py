@@ -100,6 +100,110 @@ st.markdown("""
         75% { transform: translateX(5px); }
     }
     
+    @keyframes silhouetteReveal {
+        0% { 
+            filter: brightness(0) contrast(0);
+            transform: scale(0.8);
+        }
+        50% { 
+            filter: brightness(0.3) contrast(0.5);
+            transform: scale(0.9);
+        }
+        100% { 
+            filter: brightness(1) contrast(1);
+            transform: scale(1);
+        }
+    }
+    
+    .silhouette-image {
+        filter: brightness(0) contrast(0);
+        transition: all 0.8s ease-in-out;
+        animation: silhouetteReveal 0.8s ease-in-out;
+    }
+    
+    .silhouette-revealed {
+        filter: brightness(1) contrast(1) !important;
+        animation: none !important;
+    }
+    
+    .quiz-result {
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        animation: slideInUp 0.5s ease-out;
+    }
+    
+    .quiz-result.correct {
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    }
+    
+    .quiz-result.incorrect {
+        background: linear-gradient(135deg, #f44336, #d32f2f);
+        color: white;
+        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
+    }
+    
+    .quiz-result.partial {
+        background: linear-gradient(135deg, #ff9800, #f57c00);
+        color: white;
+        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .next-question-btn {
+        background: linear-gradient(135deg, #2196F3, #1976D2);
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 1rem 0;
+        box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
+    }
+    
+    .next-question-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
+    }
+    
+    .retry-btn {
+        background: linear-gradient(135deg, #FF9800, #F57C00);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 20px;
+        font-size: 1rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 0.5rem;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    }
+    
+    .retry-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+    }
+    }
+    
     .quiz-question {
         font-size: 2rem;
         font-weight: 700;
@@ -336,6 +440,14 @@ class QuizGame:
             'total_time': 0,
             'category_stats': {}
         }
+        # 개선된 시스템 변수들
+        self.retry_count = 0
+        self.max_retries = 2
+        self.partial_score = 0.5  # 부분 점수 (50%)
+        self.retry_penalty = 0.3  # 재시도 페널티 (30% 감점)
+        self.silhouette_revealed = False
+        self.current_question_data = None
+        self.answer_attempted = False
         
     def get_random_characters(self, n: int = 4) -> List[Dict]:
         """랜덤 캐릭터 n명 선택"""
@@ -553,15 +665,27 @@ class QuizGame:
         self.time_limit += 15  # 15초 추가
         return True
     
-    def update_stats(self, is_correct, quiz_type, time_taken):
-        """통계 업데이트"""
+    def update_stats(self, is_correct, quiz_type, time_taken, retry_count=0):
+        """통계 업데이트 (개선된 시스템)"""
+        base_score = 100
+        
+        # 재시도 페널티 적용
+        if retry_count > 0:
+            penalty = self.retry_penalty * retry_count
+            base_score = int(base_score * (1 - penalty))
+        
         if is_correct:
             self.session_stats['correct_answers'] += 1
             self.combo_count += 1
             self.max_combo = max(self.max_combo, self.combo_count)
+            self.score += base_score
         else:
             self.session_stats['wrong_answers'] += 1
             self.combo_count = 0
+            # 부분 점수 (재시도 기회가 남아있을 때)
+            if retry_count < self.max_retries:
+                partial_score = int(base_score * self.partial_score)
+                self.score += partial_score
         
         self.session_stats['total_time'] += time_taken
         
@@ -572,6 +696,51 @@ class QuizGame:
         self.session_stats['category_stats'][quiz_type]['total'] += 1
         if is_correct:
             self.session_stats['category_stats'][quiz_type]['correct'] += 1
+    
+    def process_answer(self, selected_answer, correct_answer, quiz_type):
+        """답안 처리 (개선된 시스템)"""
+        is_correct = selected_answer == correct_answer
+        
+        if is_correct:
+            # 정답 처리
+            self.retry_count = 0
+            self.silhouette_revealed = True
+            return {
+                'result': 'correct',
+                'message': '🎉 정답입니다!',
+                'score': 100,
+                'show_next': True
+            }
+        else:
+            # 오답 처리
+            self.retry_count += 1
+            
+            if self.retry_count <= self.max_retries:
+                # 재시도 기회 남음
+                penalty = int(100 * self.retry_penalty * self.retry_count)
+                partial_score = int(100 * self.partial_score)
+                
+                if quiz_type == "silhouette_quiz":
+                    self.silhouette_revealed = True
+                
+                return {
+                    'result': 'partial',
+                    'message': f'❌ 틀렸습니다. 재시도 기회: {self.max_retries - self.retry_count + 1}회 남음',
+                    'score': partial_score - penalty,
+                    'show_next': False,
+                    'retry_count': self.retry_count
+                }
+            else:
+                # 모든 기회 소진
+                self.retry_count = 0
+                self.silhouette_revealed = True
+                
+                return {
+                    'result': 'incorrect',
+                    'message': f'💔 정답은 "{correct_answer}"입니다.',
+                    'score': 0,
+                    'show_next': True
+                }
     
     def get_combo_bonus(self):
         """콤보 보너스 점수 계산"""
@@ -670,15 +839,16 @@ def main():
     # 점수 및 통계 표시
     game = st.session_state.quiz_game
     if game.total_questions > 0:
-        accuracy = (game.score / game.total_questions) * 100
+        accuracy = (game.session_stats['correct_answers'] / (game.session_stats['correct_answers'] + game.session_stats['wrong_answers'])) * 100 if (game.session_stats['correct_answers'] + game.session_stats['wrong_answers']) > 0 else 0
         combo_bonus = game.get_combo_bonus()
         
         st.sidebar.markdown(f"""
         <div class="score-display">
-            📊 현재 점수: {game.score} / {game.total_questions}<br>
+            📊 현재 점수: {game.score}<br>
             정답률: {accuracy:.1f}%<br>
             🔥 연속 정답: {game.combo_count}개<br>
             💎 최대 콤보: {game.max_combo}개<br>
+            🔄 재시도 기회: {game.max_retries - game.retry_count}회<br>
             💡 힌트 사용: {game.hints_used}/2개
         </div>
         """, unsafe_allow_html=True)
@@ -779,11 +949,13 @@ def main():
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if quiz_type == "silhouette_quiz":
-                    # 실루엣 효과 (CSS 필터 적용)
+                    # 실루엣 효과 (CSS 클래스 적용)
+                    silhouette_class = "silhouette-revealed" if game.silhouette_revealed else "silhouette-image"
                     st.markdown(f"""
                     <div style="text-align: center;">
                         <img src="{quiz['hint_image']}" 
-                             style="filter: brightness(0) saturate(100%); width: 200px; height: 200px; object-fit: contain;">
+                             class="{silhouette_class}"
+                             style="width: 200px; height: 200px; object-fit: contain; border-radius: 10px;">
                     </div>
                     """, unsafe_allow_html=True)
                 else:
@@ -834,95 +1006,49 @@ def main():
                         
                         st.rerun()
         
-        # 결과 표시
+        # 결과 표시 (개선된 시스템)
         if st.session_state.show_result:
-            if st.session_state.answer_correct:
-                points_earned = st.session_state.get('points_earned', 10)
-                combo_msg = f" (🔥 {game.combo_count}연속!)" if game.combo_count > 1 else ""
+            selected_answer = st.session_state.get('selected_answer', '')
+            result = game.process_answer(selected_answer, quiz['correct_answer'], quiz_type)
+            
+            # 결과에 따른 CSS 클래스 결정
+            result_class = result['result']
+            result_message = result['message']
+            
+            st.markdown(f"""
+            <div class="quiz-result {result_class}">
+                {result_message}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 재시도 기회가 남아있고 정답이 아닌 경우
+            if result['result'] == 'partial':
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🔄 다시 시도", key="retry_btn", use_container_width=True):
+                        game.retry_count = 0
+                        st.session_state.quiz_answered = False
+                        st.session_state.show_result = False
+                        st.rerun()
                 
-                # 성공 메시지를 더 화려하게 표시
-                st.markdown(f"""
-                <div class="success-message" style="
-                    background: linear-gradient(45deg, #4CAF50, #8BC34A);
-                    color: white;
-                    padding: 1.5rem;
-                    border-radius: 20px;
-                    text-align: center;
-                    margin: 1rem 0;
-                    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-                    animation: pulse 0.6s ease-in-out;
-                ">
-                    <h3 style="margin: 0; font-size: 1.5rem;">🎉 정답입니다!{combo_msg}</h3>
-                    <p style="margin: 0.5rem 0 0 0; font-size: 1.2rem; font-weight: bold;">+{points_earned}점 획득!</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # 콤보 표시
-                if game.combo_count > 1:
-                    st.markdown(f"""
-                    <div class="combo-display">
-                        🔥 {game.combo_count}연속 정답! 🔥
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # 보너스 점수 상세 표시
-                if points_earned > 10:
-                    bonus_details = []
-                    if game.get_combo_bonus() > 0:
-                        bonus_details.append(f"🔥 콤보 보너스: +{game.get_combo_bonus()}점")
-                    if enable_timer and game.question_start_time:
-                        time_taken = time.time() - game.question_start_time
-                        time_bonus = max(0, int((game.time_limit - time_taken) / 2))
-                        if time_bonus > 0:
-                            bonus_details.append(f"⚡ 시간 보너스: +{time_bonus}점")
-                    
-                    if bonus_details:
-                        st.markdown(f"""
-                        <div style="
-                            background: linear-gradient(45deg, #FFD700, #FFA500);
-                            color: #333;
-                            padding: 1rem;
-                            border-radius: 15px;
-                            text-align: center;
-                            margin: 1rem 0;
-                            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-                        ">
-                            <strong>💎 보너스 점수</strong><br>
-                            {' | '.join(bonus_details)}
-                        </div>
-                        """, unsafe_allow_html=True)
-            else:
-                # 오답 메시지를 더 부드럽게 표시
-                st.markdown(f"""
-                <div class="error-message" style="
-                    background: linear-gradient(45deg, #F44336, #E57373);
-                    color: white;
-                    padding: 1.5rem;
-                    border-radius: 20px;
-                    text-align: center;
-                    margin: 1rem 0;
-                    box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
-                ">
-                    <h3 style="margin: 0; font-size: 1.3rem;">❌ 아쉽네요!</h3>
-                    <p style="margin: 0.5rem 0 0 0;">정답은 <strong>'{quiz['correct_answer']}'</strong>입니다.</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # 콤보 끊김 알림
-                if game.combo_count > 0:
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(45deg, #FF9800, #FFC107);
-                        color: #333;
-                        padding: 1rem;
-                        border-radius: 15px;
-                        text-align: center;
-                        margin: 1rem 0;
-                        box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
-                    ">
-                        💔 {game.combo_count}연속 기록이 끊어졌습니다.
-                    </div>
-                    """, unsafe_allow_html=True)
+                with col2:
+                    if st.button("⏭️ 다음 문제", key="next_btn", use_container_width=True):
+                        game.retry_count = 0
+                        game.silhouette_revealed = False
+                        st.session_state.current_quiz = None
+                        st.session_state.quiz_answered = False
+                        st.session_state.show_result = False
+                        st.rerun()
+            
+            # 정답이거나 모든 기회를 소진한 경우
+            elif result['show_next']:
+                if st.button("⏭️ 다음 문제", key="next_question_btn", use_container_width=True):
+                    game.retry_count = 0
+                    game.silhouette_revealed = False
+                    st.session_state.current_quiz = None
+                    st.session_state.quiz_answered = False
+                    st.session_state.show_result = False
+                    st.rerun()
             
             # 캐릭터 상세 정보 표시
             char_info = quiz['character_info']

@@ -15,12 +15,32 @@
           "total": 1
         }
       }
+    },
+    {
+      "date": "2025-08-05T17:08:00.963871",
+      "score": 20,
+      "total_questions": 3,
+      "max_combo": 2,
+      "hints_used": 0,
+      "correct_answers": 2,
+      "wrong_answers": 1,
+      "total_time": 0,
+      "category_stats": {
+        "silhouette_quiz": {
+          "correct": 2,
+          "total": 2
+        },
+        "guess_weapon": {
+          "correct": 0,
+          "total": 1
+        }
+      }
     }
   ],
   "total_stats": {
-    "total_games": 1,
-    "total_correct": 0,
-    "total_questions": 1,
-    "best_combo": 0
+    "total_games": 2,
+    "total_correct": 2,
+    "total_questions": 4,
+    "best_combo": 2
   }
 }
