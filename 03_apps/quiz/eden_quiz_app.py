@@ -449,15 +449,22 @@ class QuizGame:
         self.current_question_data = None
         self.answer_attempted = False
         
-    def get_random_characters(self, n: int = 4) -> List[Dict]:
-        """랜덤 캐릭터 n명 선택"""
-        if len(self.df) < n:
-            return self.df.to_dict('records')
-        return self.df.sample(n=n).to_dict('records')
+    def get_random_characters(self, n: int = 4, max_rarity: int = 5) -> List[Dict]:
+        """랜덤 캐릭터 n명 선택 (희귀도 제한 가능)"""
+        # 희귀도 필터링 (3성 이하만)
+        filtered_df = self.df.copy()
+        if max_rarity < 5:
+            # 3성 이하 캐릭터만 필터링
+            filtered_df = filtered_df[filtered_df['희귀도'].str.contains(r'[1-3]★', na=False)]
+        
+        if len(filtered_df) < n:
+            return filtered_df.to_dict('records')
+        return filtered_df.sample(n=n).to_dict('records')
     
     def generate_quiz_question(self, quiz_type: str) -> Dict[str, Any]:
         """퀴즈 문제 생성"""
-        characters = self.get_random_characters(4)
+        # 3성 이하 캐릭터로 제한
+        characters = self.get_random_characters(4, max_rarity=3)
         correct_char = random.choice(characters)
         
         if quiz_type == "guess_name":
@@ -466,44 +473,77 @@ class QuizGame:
             options = [char.get('캐릭터명', '') for char in characters]
             correct_answer = correct_char.get('캐릭터명', '')
             
-        elif quiz_type == "guess_rarity":
-            question = f"{correct_char.get('캐릭터명', '')}의 희귀도는?"
+        elif quiz_type == "guess_personality":
+            question = f"{correct_char.get('캐릭터명', '')}의 퍼스널리티 중 하나는?"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-            # 가능한 희귀도 목록 생성
-            rarities = []
+            
+            # 정답 캐릭터의 퍼스널리티 가져오기
+            correct_personalities = str(correct_char.get('퍼스널리티리스트', '')).split(',')
+            correct_personalities = [p.strip() for p in correct_personalities if p.strip()]
+            
+            # 속성/무기 퍼스널리티 제외
+            filtered_personalities = []
+            for personality in correct_personalities:
+                # 속성이나 무기인지 확인 (영어/한글 모두)
+                is_element = any(element in personality.lower() for element in [
+                    'fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal', 'thunder', 'shade',
+                    '땅', '불', '바람', '물', '빛', '어둠', '번개', '크리스탈'
+                ])
+                is_weapon = any(weapon in personality.lower() for weapon in [
+                    'sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance',
+                    '검', '도', '도끼', '망치', '창', '활', '지팡이', '주먹', '랜스'
+                ])
+                
+                if not is_element and not is_weapon:
+                    filtered_personalities.append(personality)
+            
+            if not filtered_personalities:
+                # 퍼스널리티가 없거나 모두 속성/무기인 경우 기본값
+                filtered_personalities = ['열정적', '차분한', '활발한', '신중한']
+            
+            # 정답 퍼스널리티 선택
+            correct_answer = random.choice(filtered_personalities)
+            
+            # 다른 캐릭터들의 퍼스널리티로 옵션 생성
+            all_personalities = []
             for char in self.df.to_dict('records'):
-                rarity = char.get('희귀도', '')
-                if rarity and rarity not in rarities:
-                    rarities.append(rarity)
+                personalities = str(char.get('퍼스널리티리스트', '')).split(',')
+                for personality in personalities:
+                    personality = personality.strip()
+                    if personality and personality not in all_personalities:
+                        # 속성/무기 제외 (영어/한글 모두)
+                        is_element = any(element in personality.lower() for element in [
+                            'fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal', 'thunder', 'shade',
+                            '땅', '불', '바람', '물', '빛', '어둠', '번개', '크리스탈'
+                        ])
+                        is_weapon = any(weapon in personality.lower() for weapon in [
+                            'sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance',
+                            '검', '도', '도끼', '망치', '창', '활', '지팡이', '주먹', '랜스'
+                        ])
+                        
+                        if not is_element and not is_weapon:
+                            all_personalities.append(personality)
             
-            # 옵션 리스트가 비어있지 않은지 확인
-            if not rarities:
-                rarities = ['5★', '4★', '3★', '2★']
-            
-            # 최소 2개 이상의 옵션이 있는지 확인
-            if len(rarities) < 2:
-                rarities.extend(['5★', '4★', '3★', '2★'])
-                rarities = list(set(rarities))  # 중복 제거
-            
-            # 안전한 옵션 생성
-            if len(rarities) >= 4:
-                options = random.sample(rarities, 4)
+            # 옵션 생성
+            if len(all_personalities) >= 4:
+                options = random.sample(all_personalities, 4)
             else:
-                options = rarities.copy()
+                options = all_personalities.copy()
                 # 부족한 옵션은 기본값으로 채움
                 while len(options) < 4:
-                    options.append(random.choice(['5★', '4★', '3★', '2★']))
+                    options.append(random.choice(['열정적', '차분한', '활발한', '신중한', '용감한', '소심한', '친절한', '냉정한']))
             
-            if correct_char.get('희귀도', '') not in options and options:
-                options[0] = correct_char.get('희귀도', '')
-            correct_answer = correct_char.get('희귀도', '')
+            # 정답이 옵션에 없으면 첫 번째 옵션을 정답으로 교체
+            if correct_answer not in options and options:
+                options[0] = correct_answer
             
         elif quiz_type == "guess_element":
             question = f"{correct_char.get('캐릭터명', '')}의 속성은?"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-            # 속성 리스트에서 선택
+            # 3성 이하 캐릭터의 속성 리스트에서 선택
+            filtered_df = self.df[self.df['희귀도'].str.contains(r'[1-3]★', na=False)]
             all_elements = []
-            for char in self.df.to_dict('records'):
+            for char in filtered_df.to_dict('records'):
                 elements = str(char.get('속성명리스트', '')).split(',')
                 all_elements.extend([elem.strip() for elem in elements if elem.strip()])
             unique_elements = []
@@ -575,9 +615,10 @@ class QuizGame:
         elif quiz_type == "guess_weapon":
             question = f"{correct_char.get('캐릭터명', '')}의 무기는?"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-            # 무기 리스트에서 선택
+            # 3성 이하 캐릭터의 무기 리스트에서 선택
+            filtered_df = self.df[self.df['희귀도'].str.contains(r'[1-3]★', na=False)]
             all_weapons = []
-            for char in self.df.to_dict('records'):
+            for char in filtered_df.to_dict('records'):
                 weapons = str(char.get('무기명리스트', '')).split(',')
                 all_weapons.extend([weapon.strip() for weapon in weapons if weapon.strip()])
             unique_weapons = []
@@ -817,14 +858,14 @@ def main():
     quiz_type = st.sidebar.selectbox(
         "퀴즈 유형 선택",
         options=[
-            "guess_name", "guess_rarity", "guess_element", 
-            "guess_weapon", "silhouette_quiz"
+            "guess_name", "guess_element", "guess_weapon", 
+            "guess_personality", "silhouette_quiz"
         ],
         format_func=lambda x: {
-            "guess_name": "🏷️ 이름 맞추기",
-            "guess_rarity": "⭐ 희귀도 맞추기", 
-            "guess_element": "🔥 속성 맞추기",
-            "guess_weapon": "⚔️ 무기 맞추기",
+            "guess_name": "🏷️ 이름 맞추기 (3성 이하)",
+            "guess_element": "🔥 속성 맞추기 (3성 이하)",
+            "guess_weapon": "⚔️ 무기 맞추기 (3성 이하)",
+            "guess_personality": "🎭 퍼스널리티 맞추기",
             "silhouette_quiz": "👤 실루엣 퀴즈"
         }[x]
     )
