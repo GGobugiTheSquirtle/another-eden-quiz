@@ -265,8 +265,9 @@ class MasterScraper:
                 if not ext or len(ext) > 5:
                     ext = ".png"
             
-            # 아이콘 파일명 생성
-            icon_filename = f"{alt_text.replace(' ', '_')}{ext}"
+            # 아이콘 파일명 생성 (중복 방지)
+            base_name = alt_text.replace(' ', '_').lower()
+            icon_filename = f"{base_name}{ext}"
             icon_filename = self.sanitize_filename(icon_filename)
             
             # 저장 경로 설정
@@ -431,8 +432,13 @@ class MasterScraper:
                     
                     # 희귀도 찾기 (SA 정보 포함)
                     if any(keyword in header_text for keyword in ['rarity', '희귀도', 'star', '별']):
-                        if '★' in value_text or 'star' in value_text.lower() or 'SA' in value_text.upper() or 'Stellar Awakened' in value_text:
+                        # 성급 정보가 있으면 저장 (SA 여부와 관계없이)
+                        if '★' in value_text or 'star' in value_text.lower():
                             data['rarity'] = value_text
+                        # SA 정보만 있는 경우도 처리
+                        elif 'SA' in value_text.upper() or 'Stellar Awakened' in value_text:
+                            # 기본 5★로 설정하고 SA 표시
+                            data['rarity'] = "5★ 성도각성"
                     
                     # 속성 찾기
                     elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
@@ -451,7 +457,8 @@ class MasterScraper:
                     
                     # 무기 찾기
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
-                        if any(weapon in value_text.lower() for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist']):
+                        # 무기 정보가 있으면 저장 (기본 무기 포함)
+                        if value_text and value_text.lower() != 'n/a':
                             data['weapons'] = value_text
                             
                             # 무기 아이콘 찾기
