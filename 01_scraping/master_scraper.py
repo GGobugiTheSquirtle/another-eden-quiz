@@ -398,13 +398,15 @@ class MasterScraper:
         return cleaned_data
 
     def scrape_character_details(self, detail_url, eng_name):
-        """캐릭터 상세 페이지 스크래핑"""
+        """캐릭터 상세 페이지 스크래핑 (아이콘 포함)"""
         try:
             response = requests.get(detail_url, headers=self.headers, timeout=30)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
             
             data = {}
+            element_icons = []
+            weapon_icons = []
             
             # 다양한 테이블에서 데이터 찾기
             tables = soup.find_all('table')
@@ -436,11 +438,31 @@ class MasterScraper:
                     elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
                         if any(element in value_text.lower() for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
                             data['elements'] = value_text
+                            
+                            # 속성 아이콘 찾기
+                            img_tags = value_cell.find_all('img')
+                            for img in img_tags:
+                                src = img.get('src', '')
+                                alt = img.get('alt', '').lower()
+                                if src and any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
+                                    icon_path = self.download_icon(src, alt, "elements_equipment")
+                                    if icon_path:
+                                        element_icons.append(icon_path)
                     
                     # 무기 찾기
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
                         if any(weapon in value_text.lower() for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist']):
                             data['weapons'] = value_text
+                            
+                            # 무기 아이콘 찾기
+                            img_tags = value_cell.find_all('img')
+                            for img in img_tags:
+                                src = img.get('src', '')
+                                alt = img.get('alt', '').lower()
+                                if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist']):
+                                    icon_path = self.download_icon(src, alt, "elements_equipment")
+                                    if icon_path:
+                                        weapon_icons.append(icon_path)
             
             # 고화질 이미지 추출
             img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
@@ -454,9 +476,17 @@ class MasterScraper:
             # 데이터 정리
             cleaned_data = self.clean_scraped_data(data)
             
+            # 아이콘 정보 추가
+            cleaned_data['element_icons'] = element_icons
+            cleaned_data['weapon_icons'] = weapon_icons
+            
             # 디버그 정보 출력
             if cleaned_data:
                 print(f"  📊 {eng_name}: 희귀도={cleaned_data.get('rarity', 'N/A')}, 속성={cleaned_data.get('elements', 'N/A')}, 무기={cleaned_data.get('weapons', 'N/A')}")
+                if element_icons:
+                    print(f"    🎯 속성 아이콘: {len(element_icons)}개")
+                if weapon_icons:
+                    print(f"    ⚔️ 무기 아이콘: {len(weapon_icons)}개")
             
             return cleaned_data
             
@@ -561,11 +591,11 @@ class MasterScraper:
             return None
 
     def generate_csv_files(self, characters, personality_data):
-        """통일된 CSV 파일들 생성"""
+        """통일된 CSV 파일들 생성 (퀴즈용 + 룰렛용)"""
         print("📋 통일된 CSV 파일들 생성 중...")
         
-        # 통일된 데이터 구조로 생성
-        unified_data = []
+        # 1. 퀴즈용 데이터 (통일된 구조)
+        quiz_data = []
         for char in characters:
             # 퍼스널리티 정보 가져오기
             base_eng_name = re.sub(r'\s*\(.*\)$', '', char.get('english_name', '')).strip()
@@ -577,7 +607,7 @@ class MasterScraper:
                 korean_personality = self.personality_mapping.get(personality, personality)
                 korean_personalities.append(korean_personality)
             
-            unified_data.append({
+            quiz_data.append({
                 '캐릭터명': char.get('korean_name', ''),
                 'English_Name': char.get('english_name', ''),
                 '캐릭터아이콘경로': char.get('image_path', ''),
@@ -587,17 +617,86 @@ class MasterScraper:
                 '퍼스널리티리스트': ', '.join(korean_personalities)
             })
         
-        unified_df = pd.DataFrame(unified_data)
-        
-        # 1. 퀴즈용 데이터 (통일된 구조)
+        quiz_df = pd.DataFrame(quiz_data)
         quiz_csv_path = CSV_DIR / "eden_quiz_data.csv"
-        unified_df.to_csv(quiz_csv_path, index=False, encoding='utf-8-sig')
+        quiz_df.to_csv(quiz_csv_path, index=False, encoding='utf-8-sig')
         print(f"✅ 퀴즈 데이터 저장: {quiz_csv_path}")
 
-        # 2. 룰렛용 데이터 (통일된 구조)
+        # 2. 룰렛용 데이터 (아이콘 포함 확장 구조)
+        roulette_data = []
+        for char in characters:
+            # 퍼스널리티 정보 가져오기
+            base_eng_name = re.sub(r'\s*\(.*\)$', '', char.get('english_name', '')).strip()
+            personalities = personality_data.get(base_eng_name, [])
+            
+            # 퍼스널리티 한글 변환
+            korean_personalities = []
+            for personality in personalities:
+                korean_personality = self.personality_mapping.get(personality, personality)
+                korean_personalities.append(korean_personality)
+            
+            # 아이콘 경로 생성 (실제 스크래핑된 아이콘 사용)
+            element_icons = char.get('element_icons', [])
+            weapon_icons = char.get('weapon_icons', [])
+            armor_icons = []
+            
+            # 스크래핑된 아이콘이 없으면 기본 경로 생성
+            if not element_icons and char.get('elements'):
+                elements = char.get('elements').split(',')
+                for element in elements:
+                    element = element.strip()
+                    if element:
+                        icon_path = f"04_data/images/character_art/elements_equipment/{element.lower()}.png"
+                        element_icons.append(icon_path)
+            
+            if not weapon_icons and char.get('weapons'):
+                weapons = char.get('weapons').split(',')
+                for weapon in weapons:
+                    weapon = weapon.strip()
+                    if weapon:
+                        icon_path = f"04_data/images/character_art/elements_equipment/{weapon.lower()}.png"
+                        weapon_icons.append(icon_path)
+            
+            roulette_data.append({
+                '캐릭터명': char.get('korean_name', ''),
+                'English_Name': char.get('english_name', ''),
+                '캐릭터아이콘경로': char.get('image_path', ''),
+                '희귀도': char.get('rarity', ''),
+                '속성명리스트': char.get('elements', ''),
+                '속성_아이콘경로리스트': '|'.join(element_icons),
+                '무기명리스트': char.get('weapons', ''),
+                '무기_아이콘경로리스트': '|'.join(weapon_icons),
+                '방어구명리스트': '',  # 현재 스크래퍼에서 방어구 정보 없음
+                '방어구_아이콘경로리스트': '|'.join(armor_icons),
+                '퍼스널리티리스트': ', '.join(korean_personalities)
+            })
+        
+        roulette_df = pd.DataFrame(roulette_data)
         roulette_csv_path = CSV_DIR / "eden_roulette_data.csv"
-        unified_df.to_csv(roulette_csv_path, index=False, encoding='utf-8-sig')
+        roulette_df.to_csv(roulette_csv_path, index=False, encoding='utf-8-sig')
         print(f"✅ 룰렛 데이터 저장: {roulette_csv_path}")
+        
+        # 3. 퍼스널리티 전용 CSV (룰렛 앱용)
+        personality_data_list = []
+        for char in characters:
+            base_eng_name = re.sub(r'\s*\(.*\)$', '', char.get('english_name', '')).strip()
+            personalities = personality_data.get(base_eng_name, [])
+            
+            korean_personalities = []
+            for personality in personalities:
+                korean_personality = self.personality_mapping.get(personality, personality)
+                korean_personalities.append(korean_personality)
+            
+            personality_data_list.append({
+                'Korean_Name': char.get('korean_name', ''),
+                'English_Name': char.get('english_name', ''),
+                'Personalities_List': ', '.join(korean_personalities)
+            })
+        
+        personality_df = pd.DataFrame(personality_data_list)
+        personality_csv_path = CSV_DIR / "character_personalities.csv"
+        personality_df.to_csv(personality_csv_path, index=False, encoding='utf-8-sig')
+        print(f"✅ 퍼스널리티 데이터 저장: {personality_csv_path}")
 
         # 3. 퍼스널리티 데이터 (character_personalities.csv)
         personality_list = []

@@ -554,6 +554,7 @@ def main():
         '속성명': '속성명리스트', '속성아이콘': '속성_아이콘경로리스트',
         '무기명': '무기명리스트', '무기아이콘': '무기_아이콘경로리스트',
         '방어구명': '방어구명리스트', '방어구아이콘': '방어구_아이콘경로리스트',
+        '퍼스널리티': '퍼스널리티리스트'
     }
     personalities_csv_path = CSV_DIR / 'character_personalities.csv'
     result = load_and_prepare_data(
@@ -615,7 +616,7 @@ def main():
         for attr in sel_attr:
             filtered_df = filtered_df[filtered_df[column_map['속성명']].str.contains(attr, na=False, regex=False)]
     if search_name:
-        search_cols = [column_map['이름'], '성격1', '성격2', '성격3', '성격4']
+        search_cols = [column_map['이름'], column_map['퍼스널리티']]
         filtered_df = filtered_df[filtered_df[search_cols].apply(
             lambda row: row.astype(str).str.contains(search_name, case=False, na=False).any(), axis=1
         )]
