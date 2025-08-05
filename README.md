@@ -1,154 +1,249 @@
-# 🎮 Another Eden Character Data & Quiz Pipeline
+# 🎮 Another Eden 퀴즈 & 룰렛
 
-## Overview
-This repository provides a **complete ecosystem** for *Another Eden* character data collection, processing, and interactive applications including quiz games and roulette systems.
+Another Eden 캐릭터 정보를 기반으로 한 퀴즈 앱과 룰렛 앱을 제공하는 통합 프로젝트입니다.
 
-| Role | Script | Purpose |
-|------|--------|---------|
-| **🚀 Integrated Launcher** | `eden_integrated_launcher.py` | Main control center for all project functions |
-| **🎯 Quiz Show App** | `eden_quiz_app.py` | Interactive quiz game with 5 different modes |
-| **🔧 Enhanced Scraper** | `eden_personality_scraper.py` | Advanced scraper with Personalities data |
-| **🎰 Roulette App** | `streamlit_eden_restructure.py` | Original roulette and filtering system |
-| **📊 Legacy Scraper** | `another_eden_gui_scraper copy.py` | Original GUI scraper (still functional) |
+## ✨ 주요 기능
+
+### 🎯 퀴즈 앱
+- **캐릭터 이름 맞추기**: 이미지로 캐릭터 이름 추측
+- **속성 맞추기**: 캐릭터의 속성 추측
+- **희귀도 맞추기**: 캐릭터의 희귀도 추측 (SA 포함)
+- **무기 맞추기**: 캐릭터의 무기 추측
+- **실루엣 퀴즈**: 실루엣으로 캐릭터 추측
+- **타이머 기능**: 시간 제한 퀴즈
+- **힌트 시스템**: 50:50 힌트 제공
+- **통계 추적**: 점수, 정답률, 콤보 기록
+
+### 🎰 룰렛 앱
+- **필터링**: 희귀도, 속성, 무기별 필터링
+- **검색**: 이름/성격 검색
+- **룰렛**: 필터링된 캐릭터 중 랜덤 선택
+- **슬롯머신**: 애니메이션 효과
+- **캐릭터 카드**: 상세 정보 표시
+
+## 🚀 빠른 시작
+
+### 1. 환경 설정
+```bash
+# 저장소 클론
+git clone https://github.com/your-username/Another_Eden_Quiz.git
+cd Another_Eden_Quiz
+
+# Python 의존성 설치
+pip install -r requirements.txt
+```
+
+### 2. 메인 런처 실행 (추천)
+```bash
+# 메인 런처 실행
+python main_launcher.py
+```
+
+### 3. 직접 앱 실행
+```bash
+# 퀴즈 앱 실행
+streamlit run 03_apps/quiz/eden_quiz_app.py
+
+# 룰렛 앱 실행
+streamlit run 03_apps/roulette/streamlit_eden_restructure.py
+
+# 스크래퍼 실행 (데이터 업데이트)
+python 01_scraping/master_scraper.py
+```
+
+### 4. Windows 사용자를 위한 간편 실행
+- `run_app.bat` 파일을 더블클릭하여 실행
+- 또는 `python run_app.py` 명령어 사용
+
+## 📁 프로젝트 구조
 
 ```
-└─ project_root/
-   ├─ character_art/
-   │   ├─ icons/
-   │   └─ elements_equipment/
-   ├─ eden_roulette_data.csv              ← auto-generated data
-   ├─ eden_integrated_launcher.py         ← 🚀 main launcher
-   ├─ eden_quiz_app.py                    ← 🎯 quiz show app
-   ├─ eden_personality_scraper.py         ← 🔧 enhanced scraper
-   ├─ streamlit_eden_restructure.py       ← 🎰 roulette app
-   ├─ another_eden_gui_scraper copy.py    ← legacy scraper
-   ├─ Matching_names.csv                  ← name mappings
-   └─ README.md                           ← this guide
+Another_Eden_Quiz/
+├── 📁 01_scraping/                    # 데이터 수집 모듈
+│   ├── master_scraper.py              # 통합 마스터 스크래퍼
+│   ├── gui_scraper.py                 # GUI 스크래퍼
+│   └── scraper_config.ini             # 스크래퍼 설정
+│
+├── 📁 02_launcher/                    # 실행 런처 모듈
+│   ├── terminal_launcher.py           # 터미널 통합 런처
+│   ├── gui_launcher.py                # GUI 런처
+│   ├── gui_main_launcher.py           # 메인 GUI 런처
+│   ├── eden_integrated_launcher.py    # Streamlit 통합 런처
+│   ├── quick_start.bat                # 빠른 시작 배치 파일
+│   ├── run_launcher.bat               # 런처 실행 배치 파일
+│   └── run_launcher.ps1               # PowerShell 런처 스크립트
+│
+├── 📁 03_apps/                        # 앱 모듈
+│   ├── 📁 quiz/                       # 퀴즈 앱
+│   │   └── eden_quiz_app.py           # 메인 퀴즈 앱
+│   ├── 📁 roulette/                   # 룰렛 앱
+│   │   └── streamlit_eden_restructure.py  # 메인 룰렛 앱
+│   └── 📁 shared/                     # 공유 유틸리티
+│       ├── batch_rename_images.py     # 이미지 일괄 이름 변경
+│       ├── fix_image_character_matching.py  # 이미지-캐릭터 매칭 수정
+│       ├── rename_images_to_korean.py # 이미지를 한글명으로 변경
+│       └── unified_image_matching.py  # 통합 이미지 매칭
+│
+├── 📁 04_data/                        # 데이터 모듈
+│   ├── 📁 csv/                        # CSV 데이터 파일
+│   │   ├── another_eden_characters_detailed.xlsx  # 상세 캐릭터 정보
+│   │   ├── eden_quiz_data.csv         # 퀴즈용 데이터
+│   │   ├── eden_quiz_data_fixed.csv   # 퀴즈용 데이터 (고정)
+│   │   ├── eden_roulette_data.csv     # 룰렛용 데이터
+│   │   ├── character_personalities.csv # 퍼스널리티 데이터
+│   │   ├── Matching_names.csv         # 이름 매칭 데이터
+│   │   └── personality_matching.csv   # 퍼스널리티 매칭 데이터
+│   ├── 📁 images/                     # 이미지 데이터
+│   │   └── 📁 character_art/          # 캐릭터 이미지
+│   │       ├── 📁 elements_equipment/ # 속성/장비 아이콘
+│   │       └── 📁 icons/              # 아이콘 이미지
+│   └── quiz_stats.json                # 퀴즈 통계 데이터
+│
+├── 📁 05_archive/                     # 아카이브 모듈
+│   ├── 📁 backup/                     # 백업 파일들
+│   ├── 📁 legacy_files/               # 레거시 파일들
+│   ├── 📁 legacy_scrapers/            # 구버전 스크래퍼들
+│   ├── 📁 old_scripts/                # 구버전 스크립트들
+│   └── 📁 old_versions/               # 구버전 파일들
+│
+├── 📁 docs/                           # 문서 모듈
+│   └── project_summary.json           # 프로젝트 요약
+│
+├── 📁 .streamlit/                     # Streamlit 설정
+├── 📁 .github/                        # GitHub 설정
+├── 📁 audio/                          # 오디오 파일
+│
+├── main_launcher.py                   # 메인 런처 (진입점)
+├── requirements.txt                   # Python 의존성
+├── README.md                          # 프로젝트 설명서 (이 파일)
+├── DATA_STRUCTURE_ANALYSIS.md         # 데이터 구조 분석
+├── FINAL_PROJECT_STRUCTURE.md         # 최종 프로젝트 구조
+├── LICENSE                            # 라이선스
+├── run_app.bat                        # 앱 실행 배치 파일
+└── run_app.py                         # 앱 실행 Python 스크립트
 ```
+
+## 📊 데이터 구조
+
+### 통일된 CSV 구조
+모든 데이터 파일은 다음 7개 컬럼을 가집니다:
+
+```csv
+- 캐릭터명 (한글)
+- English_Name (영어 이름)
+- 캐릭터아이콘경로 (이미지 파일 경로)
+- 희귀도 (5★, 5★ 성도각성 등)
+- 속성명리스트 (Fire, Water, Earth, Wind, Light, Dark, Crystal)
+- 무기명리스트 (Sword, Katana, Axe, Hammer, Spear, Bow, Staff, Fist)
+- 퍼스널리티리스트 (한글 퍼스널리티, 쉼표로 구분)
+```
+
+## 🔧 개발 도구
+
+### 스크래퍼 (`01_scraping/master_scraper.py`)
+- **캐릭터 정보 수집**: anothereden.wiki에서 372개 캐릭터
+- **상세 정보 스크래핑**: 희귀도, 속성, 무기, SA 정보
+- **퍼스널리티 수집**: 241명의 퍼스널리티 정보
+- **이미지 다운로드**: 고화질 캐릭터 이미지
+- **데이터 변환**: 영어→한글 매핑, SA→성도각성 변환
+
+### 런처 (`02_launcher/`)
+- **터미널 런처**: 명령줄 기반 통합 실행
+- **GUI 런처**: 그래픽 인터페이스 기반 실행
+- **Streamlit 런처**: 웹 기반 통합 실행
+
+## 🛠️ 설치 및 배포
+
+### 로컬 개발 환경
+```bash
+# 의존성 설치
+pip install -r requirements.txt
+
+# 개발 서버 실행
+streamlit run main_launcher.py --server.port 8501
+```
+
+### Streamlit Cloud 배포
+1. GitHub 저장소를 Streamlit Cloud에 연결
+2. 메인 파일을 `main_launcher.py`로 설정
+3. 자동 배포 활성화
+
+### Docker 배포 (선택사항)
+```dockerfile
+FROM python:3.9-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8501
+CMD ["streamlit", "run", "main_launcher.py", "--server.port=8501", "--server.address=0.0.0.0"]
+```
+
+## 📋 주요 개선사항
+
+### ✅ 완료된 작업
+- [x] **데이터 구조 통일**: 퀴즈/룰렛 데이터 동일한 컬럼 구조
+- [x] **SA 정보 처리**: SA → '성도각성' 정확한 변환
+- [x] **퍼스널리티 정보 통합**: 영어→한글 퍼스널리티 변환
+- [x] **이미지 파일명 정규화**: 특수문자 처리 및 일관된 명명
+- [x] **UI/UX 개선**: 모바일 반응형, 버튼 크기 최적화
+- [x] **매핑 파일 활용**: 이름/퍼스널리티 변환 시스템
+- [x] **불필요한 파일 아카이브화**: 레거시 파일 정리
+
+### 🔄 다음 단계
+- [ ] 전체 372개 캐릭터로 확장
+- [ ] 무기 정보 수집 개선
+- [ ] 앱에서 퍼스널리티 정보 활용
+- [ ] 데이터 검증 및 테스트
+
+## 🛠️ 기술 스택
+
+- **Python**: 3.8+
+- **Streamlit**: 웹 앱 프레임워크
+- **Pandas**: 데이터 처리
+- **BeautifulSoup**: 웹 스크래핑
+- **Requests**: HTTP 요청
+- **Pillow**: 이미지 처리
+
+## 🚨 문제 해결
+
+### 일반적인 문제
+| 문제 | 해결 방법 |
+|------|-----------|
+| CSV 파일을 찾을 수 없음 | `01_scraping/master_scraper.py` 실행하여 데이터 수집 |
+| 이미지가 표시되지 않음 | `04_data/images/` 디렉토리 확인 및 이미지 다운로드 |
+| 패키지 오류 | `pip install -r requirements.txt`로 필요한 패키지 설치 |
+| 한글 깨짐 | 파일 인코딩을 UTF-8로 설정 |
+
+### 이미지 매칭 문제
+이미지가 제대로 매칭되지 않는 경우:
+1. `03_apps/shared/fix_image_character_matching.py` 실행
+2. `03_apps/shared/unified_image_matching.py`로 매칭 재시도
+3. 필요시 `Matching_names.csv`를 수동으로 수정
+
+## 📄 라이선스
+
+MIT License - 자유롭게 사용, 수정, 배포 가능
+
+## 🤝 기여
+
+### 버그 신고
+1. Issues 탭에서 새로운 이슈 생성
+2. 발생한 문제와 재현 단계 상세히 기재
+3. 관련 스크린샷이나 로그 첨부
+
+### 개선 제안
+1. Fork 후 새로운 브랜치 생성
+2. 코드 수정 후 테스트
+3. Pull Request 요청
+
+## 📚 관련 문서
+
+- [데이터 구조 분석](DATA_STRUCTURE_ANALYSIS.md)
+- [최종 프로젝트 구조](FINAL_PROJECT_STRUCTURE.md)
 
 ---
-## 🚀 Quick Start
 
-### 🎯 가장 쉬운 방법 (Windows 사용자)
-**더블클릭으로 실행:**
-1. `quick_start.bat` 파일을 더블클릭
-2. 원하는 옵션 선택 (1-6)
-3. 자동으로 모든 환경 체크 및 실행
-
-**개별 실행 파일:**
-- `run_launcher.bat` - 통합 런처 실행
-- `run_quiz_app.bat` - 퀴즈쇼 앱 실행  
-- `run_roulette_app.bat` - 룰렛 앱 실행
-- `run_scraper.bat` - 데이터 스크래퍼 실행
-- `github_upload.bat` - GitHub 업로드
-
-### 1. Launch the Control Center
-```bash
-streamlit run eden_integrated_launcher.py
-```
-This opens the main dashboard where you can:
-- Check project file status
-- Launch all applications
-- Access development tools
-- View comprehensive guides
-
-### 2. Data Collection (Enhanced)
-**Option A: Enhanced Scraper (Recommended)**
-```bash
-python eden_personality_scraper.py
-```
-- Includes **Personalities** data from character detail pages
-- Auto-generates CSV with personality information
-- Improved error handling and progress tracking
-
-**Option B: Legacy Scraper**
-```bash
-python another_eden_gui_scraper\ copy.py
-```
-- Original functionality without personalities
-- Click *"최종 보고서 생성"*
-- Auto-generates `eden_roulette_data.csv`
-
-### 3. Applications
-**Quiz Show App** 🎯
-```bash
-streamlit run eden_quiz_app.py --server.port 8502
-```
-- 5 quiz modes: Name, Rarity, Element, Weapon, Silhouette
-- Real-time scoring system
-- Interactive visual hints
-
-**Roulette App** 🎰
-```bash
-streamlit run streamlit_eden_restructure.py --server.port 8503
-```
-- Character filtering and search
-- Slot machine animations
-- Character card displays
-
-### Duplicate Images Handling
-If a file with the same name already exists it is kept; new duplicates save as `name (1).png`, `name (2).png`, etc.
-
----
-## 🎮 New Features
-
-### Quiz Show System
-- **🏷️ Name Quiz**: Guess character names from images
-- **⭐ Rarity Quiz**: Identify character star ratings
-- **🔥 Element Quiz**: Match characters to their elements
-- ⚔️ **Weapon Quiz**: Identify character weapons
-- **👤 Silhouette Quiz**: Advanced mode with shadowed images
-- **📊 Scoring System**: Track your accuracy across sessions
-
-### Enhanced Data Collection
-- **Personalities Integration**: Scrapes character personality data from detail pages
-- **Improved Error Handling**: Better network timeout and retry logic
-- **Auto-CSV Generation**: Seamless Excel → CSV conversion with all data
-- **Progress Tracking**: Real-time updates with detailed status information
-
-### Deployment Options
-**Local Development**
-```bash
-# All apps can run simultaneously on different ports
-streamlit run eden_integrated_launcher.py         # :8501 (main)
-streamlit run eden_quiz_app.py --server.port 8502 # Quiz
-streamlit run streamlit_eden_restructure.py --server.port 8503 # Roulette
-```
-
-**Streamlit Community Cloud**
-Upload any of the apps with:
-- Corresponding `.py` file
-- `eden_roulette_data.csv`
-- `character_art/` folder hierarchy
-- `Matching_names.csv` (for Korean translations)
-
----
-## Maintenance Notes
-* **Hard-coded mappings** for Element/Weapon/Armor icons reside in `eden_data_preprocess_gui.py`. Update when new equipment appears.
-* Duplicate scripts (`another_eden_gui_scraper.py`, `eden_data_preprocess_gui (1)(2).py`) are legacy and can be archived.
-* Paths inside the CSV are **relative**; the Streamlit app now resolves them against its own location for portability.
-
----
-## 🛠️ Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| "CSV 파일이 없습니다" | Run enhanced scraper: `python eden_personality_scraper.py` |
-| Missing character images | Ensure `character_art/icons/` and `character_art/elements_equipment/` exist |
-| Empty Personalities data | Use the enhanced scraper instead of legacy version |
-| Port conflicts | Use different ports: `--server.port 8504`, `--server.port 8505`, etc. |
-| Quiz images not loading | Check that `character_art/` folder structure is intact |
-| Name mapping issues | Verify `Matching_names.csv` exists and has correct encoding |
-
-### Quick Fixes
-```bash
-# Reset everything and start fresh
-python eden_personality_scraper.py    # Generate new data
-streamlit run eden_integrated_launcher.py  # Check status
-```
-
-### Advanced Configuration
-- **Image directories**: Modify `IMAGE_DIR` paths in scraper files
-- **Quiz difficulty**: Adjust option counts in `eden_quiz_app.py`
-- **Character mappings**: Edit `Matching_names.csv` for name translations
-- **Roulette behavior**: Customize animations in `streamlit_eden_restructure.py`
+**프로젝트 상태**: ✅ 완료 (정리 완료)  
+**마지막 업데이트**: 2025-08-05  
+**버전**: 1.0.0

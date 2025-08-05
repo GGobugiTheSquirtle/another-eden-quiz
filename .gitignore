@@ -25,6 +25,8 @@ MANIFEST
 venv/
 env/
 ENV/
+.venv/
+.env/
 
 # IDE
 .vscode/
@@ -35,23 +37,38 @@ ENV/
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Project specific
-scraper_config.ini
-*.xlsx
-*.csv
-character_art/
-audio/
-archive/
+desktop.ini
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # Logs
 *.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Data files (optional - private repo이므로 선택적)
+# 04_data/images/character_art/icons/
+# 04_data/images/character_art/elements_equipment/
+
+# Archive (선택적 - 필요시 주석 해제)
+# 05_archive/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json

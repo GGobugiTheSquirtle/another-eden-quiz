@@ -1,0 +1,6 @@
+streamlit_eden_restructure.py
+eden_roulette_data.csv
+requirements.txt
+character_art/
+audio/
+.gitignore
