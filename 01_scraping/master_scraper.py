@@ -67,6 +67,10 @@ ALT_TEXT_MAPPING = {
     "202000005 icon.png": ("weapon", "활"),
     "202000006 icon.png": ("weapon", "주먹"),
     "202000007 icon.png": ("weapon", "망치"),
+    # 방어구 ALT 텍스트들
+    "216000002 icon.png": ("armor", "팔찌"),
+    "216000003 icon.png": ("armor", "목걸이"),
+    "216000004 icon.png": ("armor", "반지"),
 }
 
 # 무기 키워드 매핑 테이블 추가
@@ -747,22 +751,25 @@ class MasterScraper:
                 
                 # 1차: ALT 텍스트 기반 분류 (우선순위)
                 classified = False
-                for alt_pattern, korean_name in self.ALT_TEXT_MAPPING.items():
+                for alt_pattern, (category, korean_name) in ALT_TEXT_MAPPING.items():
                     if alt_pattern.lower() in alt_text.lower():
-                        if korean_name in ['불', '물', '땅', '바람', '빛', '그림자', '번개', '크리스탈']:
+                        if category == "element":
                             classified_elements.append(korean_name)
                             classified_element_icons.append(icon_path)
                             print(f"        ✅ 속성 (ALT): {korean_name}")
-                        else:
+                        elif category == "weapon":
                             classified_weapons.append(korean_name)
                             classified_weapon_icons.append(icon_path)
                             print(f"        ✅ 무기 (ALT): {korean_name}")
+                        elif category == "armor":
+                            # 방어구는 별도 처리 (현재는 로그만 출력)
+                            print(f"        🛡️ 방어구 (ALT): {korean_name}")
                         classified = True
                         break
                 
                 # 2차: 파일명 기반 분류
                 if not classified:
-                    for filename_pattern, korean_name in self.ELEMENT_MAPPING.items():
+                    for filename_pattern, korean_name in ELEMENT_MAPPING.items():
                         if filename_pattern.lower() in icon_filename.lower():
                             classified_elements.append(korean_name)
                             classified_element_icons.append(icon_path)
@@ -771,11 +778,20 @@ class MasterScraper:
                             break
                     
                     if not classified:
-                        for filename_pattern, korean_name in self.WEAPON_MAPPING.items():
+                        for filename_pattern, korean_name in WEAPON_MAPPING.items():
                             if filename_pattern.lower() in icon_filename.lower():
                                 classified_weapons.append(korean_name)
                                 classified_weapon_icons.append(icon_path)
                                 print(f"        ✅ 무기 (파일명): {korean_name}")
+                                classified = True
+                                break
+                    
+                    # 3차: 방어구 파일명 기반 분류
+                    if not classified:
+                        for filename_pattern, korean_name in ARMOR_MAPPING.items():
+                            if filename_pattern.lower() in icon_filename.lower():
+                                # 방어구는 별도 리스트에 저장 (현재는 로그만 출력)
+                                print(f"        🛡️ 방어구 (파일명): {korean_name}")
                                 classified = True
                                 break
                 
@@ -787,10 +803,18 @@ class MasterScraper:
                 elements = ', '.join(list(dict.fromkeys(classified_elements)))  # 중복 제거
             
             # 퍼스널리티에서 무기 추출 (레거시 방식 유지)
-            personality_weapons = self.extract_weapons_from_personalities(eng_name)
-            if personality_weapons:
-                weapons = ', '.join(personality_weapons)
-                print(f"    🗡️ 퍼스널리티에서 추출된 무기: {weapons}")
+            # 캐릭터 이름으로 퍼스널리티 조회
+            base_eng_name = eng_name.replace(' (Another Style)', '').replace(' (Alter)', '').replace(' AS', '').strip()
+            personalities = self.character_personalities.get(base_eng_name, [])
+            
+            if personalities:
+                print(f"    🎯 퍼스널리티 매칭: {eng_name} → {base_eng_name}")
+                personality_weapons = self.extract_weapons_from_personalities(personalities, personalities)
+                if personality_weapons:
+                    weapons = ', '.join(personality_weapons)
+                    print(f"    🗡️ 퍼스널리티에서 추출된 무기: {weapons}")
+                elif classified_weapons:
+                    weapons = ', '.join(list(dict.fromkeys(classified_weapons)))
             elif classified_weapons:
                 weapons = ', '.join(list(dict.fromkeys(classified_weapons)))
             
@@ -1073,7 +1097,13 @@ class MasterScraper:
             try:
                 existing_df = pd.read_csv(quiz_csv_path, encoding='utf-8-sig')
                 for _, row in existing_df.iterrows():
-                    existing_data[row['English_Name']] = True
+                    existing_data[row['English_Name']] = {
+                        'rarity': row.get('희귀도', ''),
+                        'elements': row.get('속성명리스트', ''),
+                        'weapons': row.get('무기명리스트', ''),
+                        'korean_name': row.get('캐릭터명', ''),
+                        'image_path': row.get('캐릭터아이콘경로', '')
+                    }
                 print(f"📋 기존 데이터 로드: {len(existing_data)}개 캐릭터")
             except Exception as e:
                 print(f"⚠️ 기존 데이터 로드 실패: {e}")
@@ -1183,10 +1213,35 @@ class MasterScraper:
         # --- Phase 2: Process all data ---
         print("\n--- Phase 2: 모든 데이터 처리 ---")
         processed_characters = []
+        details_index = 0  # all_details의 실제 인덱스 추적
+        
         for i, char_data in enumerate(characters):
             eng_name = char_data['english_name']
             kor_name = self.convert_to_korean(eng_name)
-            details = all_details[i]
+            
+            # 기존 데이터에서 스킵된 캐릭터는 details가 없음
+            existing_char = existing_data.get(eng_name)
+            if existing_char:
+                # 기존 데이터 사용
+                details = {
+                    'rarity': existing_char.get('rarity', ''),
+                    'elements': existing_char.get('elements', ''),
+                    'weapons': existing_char.get('weapons', ''),
+                    'high_res_image_url': ''
+                }
+            else:
+                # 새로 스크래핑된 데이터 사용
+                if details_index < len(all_details):
+                    details = all_details[details_index]
+                    details_index += 1
+                else:
+                    # 기본값 설정
+                    details = {
+                        'rarity': '',
+                        'elements': '',
+                        'weapons': '',
+                        'high_res_image_url': ''
+                    }
 
             # Get personalities - 스타일 접미사 제거 후 매칭
             base_eng_name = re.sub(r'\s*\(.*\)$', '', eng_name).strip()
