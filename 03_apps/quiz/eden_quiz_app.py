@@ -420,10 +420,29 @@ def load_character_data():
     project_root = Path(__file__).parent.parent.parent
     csv_path = project_root / "04_data" / "csv" / "eden_quiz_data.csv"
     
+    # Streamlit Cloud 환경 감지
+    is_cloud = os.environ.get('STREAMLIT_SHARING', False) or '/app' in str(Path.cwd())
+    
     # 경로 검증 및 디버깅 정보
     st.info(f"🔍 데이터 파일 경로: {csv_path}")
     st.info(f"📁 프로젝트 루트: {project_root}")
+    st.info(f"☁️ Cloud 환경: {'예' if is_cloud else '아니오'}")
+    st.info(f"💻 현재 작업 디렉토리: {Path.cwd()}")
     st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
+    
+    # Cloud 환경이면 우선적으로 Cloud 경로 시도
+    if is_cloud:
+        cloud_paths = [
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/home/appuser/venv/lib/python3.9/site-packages/04_data/csv/eden_quiz_data.csv"),
+        ]
+        for cloud_path in cloud_paths:
+            if cloud_path.exists():
+                csv_path = cloud_path
+                st.success(f"☁️ Cloud 환경에서 파일 발견: {csv_path}")
+                break
     
     # 파일 존재 여부 확인
     if not csv_path.exists():
