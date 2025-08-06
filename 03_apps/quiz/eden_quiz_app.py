@@ -412,35 +412,51 @@ def safe_icon_to_data_uri(path: str) -> str:
 
 @st.cache_data
 def load_character_data():
-    """캐릭터 데이터 로드 (출시일 지원)"""
-    csv_path = CSV_DIR / "eden_quiz_data.csv"
+    """캐릭터 데이터 로드 (캐싱 적용)"""
+    # 프로젝트 루트 경로 설정
+    project_root = Path(__file__).parent.parent.parent
+    csv_path = project_root / "04_data" / "csv" / "eden_quiz_data.csv"
     
-    # 파일 존재 확인
+    # 경로 검증 및 디버깅 정보
+    st.info(f"🔍 데이터 파일 경로: {csv_path}")
+    st.info(f"📁 프로젝트 루트: {project_root}")
+    st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
+    
+    # 파일 존재 여부 확인
     if not csv_path.exists():
-        st.error(f"📁 퀴즈 데이터를 불러올 수 없습니다. CSV 파일을 확인하세요.")
-        st.error(f"파일 경로: {csv_path}")
+        st.error(f"❌ CSV 파일을 찾을 수 없습니다: {csv_path}")
         
-        # 대체 파일들 확인
-        alternative_files = [
-            CSV_DIR / "eden_roulette_data.csv",
-            CSV_DIR / "character_personalities.csv", 
-            CSV_DIR / "Matching_names.csv"
+        # 대체 경로 시도
+        alternative_paths = [
+            project_root / "04_data" / "csv" / "eden_roulette_data.csv",
+            project_root / "04_data" / "csv" / "character_personalities.csv",
+            Path("04_data/csv/eden_quiz_data.csv"),
+            Path("04_data/csv/eden_roulette_data.csv"),
+            Path("csv/eden_quiz_data.csv"),
+            Path("csv/eden_roulette_data.csv")
         ]
         
-        st.info("🔍 사용 가능한 CSV 파일 확인 중...")
-        available_files = [f.name for f in alternative_files if f.exists()]
+        st.info("🔍 대체 경로에서 파일을 찾는 중...")
+        available_files = []
+        for alt_path in alternative_paths:
+            if alt_path.exists():
+                available_files.append(str(alt_path))
+                st.success(f"✅ 발견된 파일: {alt_path}")
+                csv_path = alt_path
+                break
         
-        if available_files:
-            st.info(f"📄 다음 파일들을 발견했습니다: {', '.join(available_files)}")
-            st.info("💡 **해결 방법**: 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 quiz 데이터를 생성하세요.")
-        else:
-            st.warning("⚠️ 데이터 파일이 전혀 없습니다. 스크래퍼를 먼저 실행해주세요.")
-        
-        st.stop()
+        if not available_files:
+            st.error("❌ 어떤 CSV 파일도 찾을 수 없습니다.")
+            st.info("💡 **해결 방법**:")
+            st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
+            st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
+            st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
+            st.stop()
     
     # 파일 읽기 시도 (여러 인코딩)
     try:
         df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+        st.success(f"✅ UTF-8 인코딩으로 파일 로드 성공")
     except UnicodeDecodeError:
         try:
             df = pd.read_csv(csv_path, encoding='cp949').fillna('')

@@ -200,60 +200,87 @@ def show_home_page():
 
 def show_data_management():
     """데이터 관리 페이지"""
-    render_header("데이터 관리", "프로젝트 데이터를 관리하고 확인하세요", "📊")
+    render_header("데이터 관리", "데이터 스크래핑 및 파일 관리", "📊")
     
-    # 데이터 현황
-    data_status = check_data_status()
-    render_data_summary(data_status)
+    # 파일 업로드 섹션 (Cloud Streamlit 지원)
+    st.markdown("### 📤 CSV 파일 업로드 (Cloud 환경용)")
+    st.info("💡 **Cloud Streamlit 환경에서는 파일 업로드가 필요할 수 있습니다.**")
     
-    # 데이터 작업
-    st.markdown("### 🔧 데이터 작업")
+    uploaded_files = st.file_uploader(
+        "CSV 파일들을 선택하세요",
+        type=['csv'],
+        accept_multiple_files=True,
+        help="eden_quiz_data.csv, eden_roulette_data.csv, character_personalities.csv 등을 업로드하세요."
+    )
+    
+    if uploaded_files:
+        csv_dir = PROJECT_ROOT / "04_data" / "csv"
+        csv_dir.mkdir(parents=True, exist_ok=True)
+        
+        uploaded_count = 0
+        for uploaded_file in uploaded_files:
+            try:
+                # 파일 저장
+                file_path = csv_dir / uploaded_file.name
+                with open(file_path, 'wb') as f:
+                    f.write(uploaded_file.getvalue())
+                
+                # 파일 검증
+                df = pd.read_csv(file_path, encoding='utf-8-sig')
+                st.success(f"✅ {uploaded_file.name} 업로드 완료 ({len(df)}행)")
+                uploaded_count += 1
+                
+            except Exception as e:
+                st.error(f"❌ {uploaded_file.name} 업로드 실패: {str(e)}")
+        
+        if uploaded_count > 0:
+            st.success(f"🎉 총 {uploaded_count}개 파일 업로드 완료!")
+            st.rerun()
+    
+    st.markdown("---")
+    
+    # 기존 데이터 관리 기능들
+    st.markdown("### 📡 데이터 스크래퍼")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        render_card("""
-        <h4>📡 데이터 스크래핑</h4>
-        <p>최신 캐릭터 정보를 Another Eden Wiki에서 가져옵니다.</p>
-        <ul>
-            <li>캐릭터 기본 정보</li>
-            <li>퍼스널리티 데이터</li>
-            <li>이미지 다운로드</li>
-            <li>자동 이미지 정리</li>
-        </ul>
-        """)
-        
-        if st.button("🔄 전체 스크래핑 실행", use_container_width=True, type="primary"):
+        if st.button("📡 스크래퍼 실행", use_container_width=True, type="primary"):
             if run_scraper():
-                time.sleep(2)
                 st.rerun()
     
     with col2:
-        render_card("""
-        <h4>🗂️ 이미지 정리</h4>
-        <p>스크래핑된 이미지를 사용자 친화적으로 정리합니다.</p>
-        <ul>
-            <li>출시일 순 정리</li>
-            <li>가나다 순 정리</li>
-            <li>백업 이미지 복원</li>
-            <li>중복 파일 제거</li>
-        </ul>
-        """)
-        
-        if st.button("🗂️ 이미지 정리 실행", use_container_width=True):
-            try:
-                from image_organizer import ImageOrganizer
-                organizer = ImageOrganizer(PROJECT_ROOT)
-                
-                with st.spinner("이미지 정리 중..."):
-                    organizer.copy_backup_images()
-                    organizer.create_organized_folders()
-                
-                render_status_message("이미지 정리가 완료되었습니다!", "success")
-                time.sleep(1)
-                st.rerun()
-            except Exception as e:
-                render_status_message(f"이미지 정리 중 오류: {e}", "error")
+        if st.button("🔄 데이터 새로고침", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+    
+    # 데이터 상태 확인
+    st.markdown("### 📈 데이터 현황")
+    data_status = check_data_status()
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("CSV 파일", data_status["CSV 파일"])
+    with col2:
+        st.metric("캐릭터 이미지", data_status["캐릭터 이미지"])
+    with col3:
+        st.metric("백업 이미지", data_status["백업 이미지"])
+    with col4:
+        st.metric("정리된 이미지", data_status["정리된 이미지"])
+    
+    # 이미지 정리 기능
+    st.markdown("### 🖼️ 이미지 정리")
+    if st.button("🔄 이미지 정리 실행", use_container_width=True):
+        try:
+            from apps.shared.image_organizer import ImageOrganizer
+            organizer = ImageOrganizer()
+            organizer.create_organized_folders()
+            
+            render_status_message("이미지 정리가 완료되었습니다!", "success")
+            time.sleep(1)
+            st.rerun()
+        except Exception as e:
+            render_status_message(f"이미지 정리 중 오류: {e}", "error")
     
     # 파일 상태 상세 정보
     st.markdown("### 📁 파일 상태 상세")

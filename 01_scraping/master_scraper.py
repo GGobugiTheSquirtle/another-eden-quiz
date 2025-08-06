@@ -526,17 +526,34 @@ class MasterScraper:
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
                         # 무기 정보가 있으면 저장 (기본 무기 포함)
                         if value_text and value_text.lower() != 'n/a':
-                            data['weapons'] = value_text
+                            # 잘못된 텍스트 필터링
+                            invalid_texts = [
+                                "are not always best to use in every situation",
+                                "and can become outdated",
+                                "true manifestweapon of another class can be useful if current class is without manifest",
+                                "manifestweapon",
+                                "weapon of another class"
+                            ]
                             
-                            # 무기 아이콘 찾기
-                            img_tags = value_cell.find_all('img')
-                            for img in img_tags:
-                                src = img.get('src', '')
-                                alt = img.get('alt', '').lower()
-                                if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist']):
-                                    icon_path = self.download_icon(src, alt, "elements_equipment")
-                                    if icon_path:
-                                        weapon_icons.append(icon_path)
+                            # 잘못된 텍스트가 포함되어 있는지 확인
+                            is_invalid = any(invalid_text.lower() in value_text.lower() for invalid_text in invalid_texts)
+                            
+                            if not is_invalid and len(value_text.strip()) < 100:  # 길이 제한 추가
+                                data['weapons'] = value_text
+                                
+                                # 무기 아이콘 찾기
+                                img_tags = value_cell.find_all('img')
+                                for img in img_tags:
+                                    src = img.get('src', '')
+                                    alt = img.get('alt', '').lower()
+                                    if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana']):
+                                        icon_path = self.download_icon(src, alt, "elements_equipment")
+                                        if icon_path:
+                                            weapon_icons.append(icon_path)
+                            else:
+                                # 잘못된 텍스트인 경우 기본값 설정
+                                data['weapons'] = 'Obtain'
+                                print(f"    ⚠️ {eng_name}: 잘못된 무기명 감지, 기본값 'Obtain'으로 설정")
             
             # 고화질 이미지 추출
             img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
@@ -685,11 +702,11 @@ class MasterScraper:
                 '캐릭터명': char.get('korean_name', ''),
                 'English_Name': char.get('english_name', ''),
                 '캐릭터아이콘경로': char.get('image_path', ''),
-                '희귀도': char.get('rarity', ''),
+                '희귀도': char.get('rarity', '5★'),
                 '속성명리스트': char.get('elements', ''),
-                '무기명리스트': char.get('weapons', ''),
+                '무기명리스트': char.get('weapons', 'Obtain'),
                 '퍼스널리티리스트': ', '.join(korean_personalities),
-                '출시일': char.get('release_date', '')  # 출시일 추가
+                '출시일': char.get('release_date', '')
             })
         
         quiz_df = pd.DataFrame(quiz_data)
@@ -728,23 +745,29 @@ class MasterScraper:
                 weapons = char.get('weapons').split(',')
                 for weapon in weapons:
                     weapon = weapon.strip()
-                    if weapon:
-                        icon_path = f"04_data/images/character_art/elements_equipment/{weapon.lower()}.png"
+                    if weapon and weapon.lower() != 'obtain':
+                        # 무기명 정규화
+                        weapon_normalized = weapon.lower().replace(' ', '_').replace('-', '_')
+                        icon_path = f"04_data/images/character_art/elements_equipment/{weapon_normalized}.png"
+                        weapon_icons.append(icon_path)
+                    elif weapon.lower() == 'obtain':
+                        # Obtain 무기는 기본 아이콘 사용
+                        icon_path = f"04_data/images/character_art/elements_equipment/obtain.png"
                         weapon_icons.append(icon_path)
             
             roulette_data.append({
                 '캐릭터명': char.get('korean_name', ''),
                 'English_Name': char.get('english_name', ''),
                 '캐릭터아이콘경로': char.get('image_path', ''),
-                '희귀도': char.get('rarity', ''),
+                '희귀도': char.get('rarity', '5★'),
                 '속성명리스트': char.get('elements', ''),
                 '속성_아이콘경로리스트': '|'.join(element_icons),
-                '무기명리스트': char.get('weapons', ''),
+                '무기명리스트': char.get('weapons', 'Obtain'),
                 '무기_아이콘경로리스트': '|'.join(weapon_icons),
                 '방어구명리스트': '',  # 현재 스크래퍼에서 방어구 정보 없음
                 '방어구_아이콘경로리스트': '|'.join(armor_icons),
                 '퍼스널리티리스트': ', '.join(korean_personalities),
-                '출시일': char.get('release_date', '')  # 출시일 추가
+                '출시일': char.get('release_date', '')
             })
         
         roulette_df = pd.DataFrame(roulette_data)

@@ -416,12 +416,55 @@ def get_image_base64(image_path):
 @st.cache_data
 def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
     """
-    기본 데이터와 성격 데이터를 로드하고 병합하여 준비합니다.
+    CSV 파일을 로드하고 데이터를 준비합니다.
+    
+    Args:
+        csv_path: 메인 CSV 파일 경로
+        personalities_csv_path: 퍼스널리티 CSV 파일 경로
+        column_map_config: 컬럼 매핑 설정
+        
+    Returns:
+        (df, name_col, char_icon_col, rarity_col, attribute_col, weapon_col, personality_col)
     """
+    # 프로젝트 루트 경로 설정
+    project_root = Path(__file__).parent.parent.parent
+    
+    # 경로 검증 및 디버깅 정보
+    st.info(f"🔍 메인 데이터 파일 경로: {csv_path}")
+    st.info(f"📁 프로젝트 루트: {project_root}")
+    st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
+    
+    # 파일 존재 여부 확인
     if not Path(csv_path).exists():
-        st.error(f"📁 룰렛 데이터를 불러올 수 없습니다: {csv_path}")
-        st.info("💡 **해결 방법**: 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
-        return None, *(None,)*7
+        st.error(f"❌ 메인 CSV 파일을 찾을 수 없습니다: {csv_path}")
+        
+        # 대체 경로 시도
+        alternative_paths = [
+            project_root / "04_data" / "csv" / "eden_roulette_data.csv",
+            project_root / "04_data" / "csv" / "eden_quiz_data.csv",
+            project_root / "04_data" / "csv" / "character_personalities.csv",
+            Path("04_data/csv/eden_roulette_data.csv"),
+            Path("04_data/csv/eden_quiz_data.csv"),
+            Path("csv/eden_roulette_data.csv"),
+            Path("csv/eden_quiz_data.csv")
+        ]
+        
+        st.info("🔍 대체 경로에서 파일을 찾는 중...")
+        available_files = []
+        for alt_path in alternative_paths:
+            if alt_path.exists():
+                available_files.append(str(alt_path))
+                st.success(f"✅ 발견된 파일: {alt_path}")
+                csv_path = str(alt_path)
+                break
+        
+        if not available_files:
+            st.error("❌ 어떤 CSV 파일도 찾을 수 없습니다.")
+            st.info("💡 **해결 방법**:")
+            st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
+            st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
+            st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
+            return None, *(None,)*7
         
     if not Path(personalities_csv_path).exists():
         st.warning(f"⚠️ 퍼스널리티 데이터가 없습니다: {personalities_csv_path}")
@@ -431,6 +474,7 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
         # 메인 데이터 로드 (다양한 인코딩 지원)
         try:
             df_main = pd.read_csv(csv_path, encoding='utf-8-sig')
+            st.success(f"✅ UTF-8 인코딩으로 메인 파일 로드 성공")
         except UnicodeDecodeError:
             df_main = pd.read_csv(csv_path, encoding='cp949')
             st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다.")
@@ -440,22 +484,27 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
         if Path(personalities_csv_path).exists():
             try:
                 df_pers = pd.read_csv(personalities_csv_path, encoding='utf-8-sig')
+                st.success(f"✅ UTF-8 인코딩으로 퍼스널리티 파일 로드 성공")
             except UnicodeDecodeError:
                 df_pers = pd.read_csv(personalities_csv_path, encoding='cp949')
+                st.warning("⚠️ 퍼스널리티 파일 인코딩을 cp949로 읽었습니다.")
         
         log_debug(f"[CSVLoad] {len(df_main)} records from main" + 
                  (f", {len(df_pers)} from personalities." if df_pers is not None else " (no personalities)."))
 
         # 데이터 병합
-        df = pd.merge(df_main, df_pers[['Korean_Name', 'Personalities_List']],
-                      left_on='캐릭터명', right_on='Korean_Name', how='left')
-        
-        # 병합 후 중복 컬럼 제거
-        df.drop(columns=['Korean_Name'], inplace=True)
-        
-        # 'Personalities_List' 컬럼의 NaN 값을 빈 문자열로 대체
-        df['Personalities_List'] = df['Personalities_List'].fillna('')
-        column_map_config['personalities'] = 'Personalities_List' # 맵에 추가
+        if df_pers is not None:
+            df = pd.merge(df_main, df_pers[['Korean_Name', 'Personalities_List']],
+                          left_on='캐릭터명', right_on='Korean_Name', how='left')
+            
+            # 병합 후 중복 컬럼 제거
+            df.drop(columns=['Korean_Name'], inplace=True)
+            
+            # 'Personalities_List' 컬럼의 NaN 값을 빈 문자열로 대체
+            df['Personalities_List'] = df['Personalities_List'].fillna('')
+            column_map_config['personalities'] = 'Personalities_List' # 맵에 추가
+        else:
+            df = df_main.copy()
 
     except Exception as e:
         st.error(f"데이터 파일을 로드하고 병합하는 중 오류 발생: {e}")
