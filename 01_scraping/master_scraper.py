@@ -402,7 +402,7 @@ class MasterScraper:
             
             # 확장자 처리
             if not ext or ext.lower() in ['.php'] or len(ext) > 5:
-                ext = ".png"
+                            ext = ".png"
             
             # 파일명 정리 (원본 파일명 우선 사용)
             if base_name and base_name.lower() not in ["thumb", "index"]:
@@ -477,6 +477,8 @@ class MasterScraper:
             characters = []
             rows = char_table.find_all('tr')[1:]  # 헤더 제외
             
+            print(f"📊 총 {len(rows)}개 캐릭터 행 처리 중...")
+            
             for row in rows:
                 cols = row.find_all(['td', 'th'])
                 if len(cols) < 4:  # 최소 4개 컬럼 필요 (아이콘, 이름, 속성/장비, 출시일)
@@ -489,43 +491,60 @@ class MasterScraper:
                         continue
                     
                     eng_name = char_link.get('title', '').strip()
-                    detail_url = urljoin(BASE_URL, char_link.get('href', ''))
+                    if not eng_name:
+                        eng_name = char_link.text.strip()
                     
-                    if not eng_name or not detail_url:
-                        continue
+                    detail_url = char_link.get('href', '')
+                    if detail_url and not detail_url.startswith('http'):
+                        detail_url = urljoin(BASE_URL, detail_url)
                     
-                    # 이미지 URL 추출 (첫 번째 컬럼)
-                    img_tag = cols[0].find('img')
-                    img_url = img_tag.get('src', '') if img_tag else ''
+                    # 출시일 추출 (네 번째 컬럼)
+                    release_date = cols[3].text.strip() if len(cols) > 3 else ''
                     
-                    # 출시일 추출 (네 번째 컬럼, 레거시 로직 적용)
-                    release_date = ""
-                    if len(cols) >= 4:
-                        release_date = cols[3].get_text(strip=True)
-                        # 날짜 형식 정규화 (YYYY/MM/DD)
-                        if release_date and len(release_date) > 5:
-                            # 다양한 날짜 형식 처리
-                            date_match = re.search(r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})', release_date)
-                            if date_match:
-                                year, month, day = date_match.groups()
-                                release_date = f"{year}/{int(month):02d}/{int(day):02d}"
+                    # ★★★ 레거시 방식: 목록 페이지에서 직접 속성/무기 아이콘 추출 ★★★
+                    element_equipment_cell = cols[2]  # 세 번째 셀
+                    ee_icon_tags = element_equipment_cell.find_all('img')
+                    element_icons = []
+                    element_alts = []
                     
-                    characters.append({
+                    print(f"  🎯 {eng_name}: 3번째 셀에서 {len(ee_icon_tags)}개 아이콘 발견")
+                    
+                    for img_tag in ee_icon_tags:
+                        src = img_tag.get('src', '')
+                        alt = img_tag.get('alt', '')
+                        
+                        if src:
+                            # 레거시 방식: 조건 없이 모든 아이콘 다운로드
+                            icon_path = self.download_icon(src, alt, "elements_equipment")
+                            if icon_path:
+                                element_icons.append(icon_path)
+                                element_alts.append(alt)
+                                print(f"    ✅ 아이콘 다운로드: {os.path.basename(icon_path)} (ALT: {alt})")
+                    
+                    # 캐릭터 정보 저장 (아이콘 정보 포함)
+                    character_info = {
                         'english_name': eng_name,
+                        'korean_name': eng_name,  # 일단 같게 설정
                         'detail_url': detail_url,
-                        'image_url': img_url,
-                        'release_date': release_date
-                    })
+                        'release_date': release_date,
+                        'element_icons': element_icons,  # ★★★ 목록에서 수집한 아이콘들 ★★★
+                        'element_alts': element_alts
+                    }
+                    
+                    characters.append(character_info)
                     
                 except Exception as e:
-                    print(f"⚠️ 행 파싱 오류: {e}")
+                    print(f"  ⚠️ 행 처리 중 오류: {e}")
                     continue
             
-            print(f"✅ 캐릭터 목록 스크래핑 완료: {len(characters)}개")
+            print(f"✅ 캐릭터 목록 스크래핑 완료: {len(characters)}명")
             return characters
             
+        except requests.exceptions.RequestException as e:
+            print(f"❌ 네트워크 오류: {e}")
+            return []
         except Exception as e:
-            print(f"❌ 캐릭터 목록 스크래핑 실패: {e}")
+            print(f"❌ 스크래핑 오류: {e}")
             return []
     
     def extract_weapons_from_personalities(self, korean_personalities, english_personalities):
@@ -654,236 +673,148 @@ class MasterScraper:
         
         return cleaned_data
 
-    def scrape_character_details(self, detail_url, eng_name):
-        """캐릭터 상세 페이지 스크래핑 (아이콘 포함)"""
+    def scrape_character_details(self, detail_url, eng_name, existing_icons=None, existing_alts=None):
+        """캐릭터 상세 정보 스크래핑"""
+        print(f"  🔍 {eng_name} 상세 정보 스크래핑 중...")
+        
+        # ★★★ 레거시 방식: 목록에서 이미 수집한 아이콘 정보 우선 사용 ★★★
+        element_icons = existing_icons.copy() if existing_icons else []
+        element_alts = existing_alts.copy() if existing_alts else []
+        
         try:
             response = requests.get(detail_url, headers=self.headers, timeout=30)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            data = {}
-            element_icons = []
-            weapon_icons = []
+            # 기본 캐릭터 정보 초기화
+            rarity = "5★"
+            elements = "N/A"
+            weapons = "Obtain"
             
-            # 다양한 테이블에서 데이터 찾기
-            tables = soup.find_all('table')
+            # 캐릭터 이미지 다운로드 (상세 페이지에서)
+            image_path = ""
             
-            # 위치 기반 파싱 (레거시 방식) - 완전 복원
-            element_icons = []
-            element_alts = []  # ALT 텍스트도 저장
-            weapon_icons = []
+            # 이미지 검색 순서: infobox → 첫 번째 이미지
+            image_candidates = []
             
-            # 메인 캐릭터 정보 테이블 찾기 (anotherTable, wikitable, infobox)
-            main_tables = soup.find_all('table', class_=['anotherTable', 'wikitable', 'infobox'])
-            print(f"    🔍 {len(main_tables)}개 메인 테이블 발견")
+            # 1. infobox 내 이미지 찾기
+            infobox = soup.find('table', class_='infobox')
+            if infobox:
+                infobox_imgs = infobox.find_all('img')
+                image_candidates.extend([img.get('src', '') for img in infobox_imgs if img.get('src')])
             
-            for table_idx, table in enumerate(main_tables):
-                rows = table.find_all('tr')
-                table_class = table.get('class', ['없음'])
-                print(f"      📋 테이블 {table_idx} (class={table_class}): {len(rows)}개 행")
-                
-                # 각 행을 확인하여 3번째 셀(인덱스 2)에 이미지가 있는 행 처리
-                for row_idx, row in enumerate(rows):
-                    cells = row.find_all(['th', 'td'])
-                    
-                    # 3개 이상의 셀이 있는 행에서 3번째 셀 확인
-                    if len(cells) >= 3:
-                        element_equipment_cell = cells[2]
-                        ee_icon_tags = element_equipment_cell.find_all('img')
-                        
-                        if ee_icon_tags:  # 이미지가 있는 행만 처리
-                            print(f"        🎯 테이블 {table_idx}, 행 {row_idx}: 3번째 셀에서 {len(ee_icon_tags)}개 이미지 발견")
-                            
-                            for img_tag in ee_icon_tags:
-                                src = img_tag.get('src', '')
-                                alt = img_tag.get('alt', '')
-                                
-                                if src:
-                                    # 레거시 방식: 조건 없이 모든 아이콘 다운로드
-                                    icon_path = self.download_icon(src, alt, "elements_equipment")
-                                    if icon_path:
-                                        # 중복 방지 (레거시 방식: 경로와 ALT를 함께 저장)
-                                        if icon_path not in element_icons:
-                                            element_icons.append(icon_path)
-                                            element_alts.append(alt)  # ALT 텍스트도 함께 저장
-                                            print(f"          ✅ 아이콘 추가: {os.path.basename(icon_path)} (ALT: {alt})")
-                                        else:
-                                            print(f"          🔄 중복 아이콘 스킵: {os.path.basename(icon_path)}")
+            # 2. 일반 이미지 태그 찾기
+            if not image_candidates:
+                content_imgs = soup.find_all('img')
+                for img in content_imgs[:5]:  # 처음 5개만 체크
+                    src = img.get('src', '')
+                    if src and any(keyword in src.lower() for keyword in ['character', 'char', 'portrait']):
+                        image_candidates.append(src)
             
-            # 무기 아이콘은 element_icons에서 복사 (레거시 방식)
-            weapon_icons = element_icons.copy()
+            # 3. 마지막 수단: 아무 이미지나
+            if not image_candidates:
+                first_img = soup.find('img')
+                if first_img and first_img.get('src'):
+                    image_candidates.append(first_img.get('src'))
+            
+            # 이미지 다운로드 시도
+            if image_candidates:
+                for img_url in image_candidates:
+                    if img_url:
+                        image_path = self.download_character_image(img_url, eng_name, eng_name)
+                        if image_path:
+                            break
+            
+            print(f"  📸 이미지: {'✅' if image_path else '❌'}")
+            
+            # ★★★ 아이콘이 목록에서 이미 수집되었으므로 상세 페이지에서는 추가 수집 안 함 ★★★
+            if element_icons:
+                print(f"  🎯 아이콘: 목록에서 이미 {len(element_icons)}개 수집됨")
+            else:
+                print(f"  ⚠️ 아이콘: 목록에서 수집되지 않음")
             
             # 레거시 방식: 다운로드된 아이콘을 매핑 테이블로 분류
             classified_elements = []
             classified_element_icons = []
             classified_weapons = []
             classified_weapon_icons = []
-            classified_armors = []
-            classified_armor_icons = []
             
             print(f"    🔍 {len(element_icons)}개 다운로드된 아이콘 분류 중...")
             
             for i, (icon_path, alt_text) in enumerate(zip(element_icons, element_alts)):
-                filename = os.path.basename(icon_path)
-                print(f"      🔍 분류 중: {filename} (ALT: {alt_text})")
+                icon_filename = os.path.basename(icon_path)
+                print(f"      🔍 분류 중: {icon_filename} (ALT: {alt_text})")
                 
-                # 1순위: ALT 텍스트 기반 분류 (레거시 방식)
-                if alt_text in ALT_TEXT_MAPPING:
-                    category, name = ALT_TEXT_MAPPING[alt_text]
-                    if category == "element":
-                        classified_elements.append(name)
-                        classified_element_icons.append(icon_path)
-                        print(f"        ✅ 속성 (ALT): {name}")
-                    elif category == "weapon":
-                        classified_weapons.append(name)
-                        classified_weapon_icons.append(icon_path)
-                        print(f"        ⚔️ 무기 (ALT): {name}")
+                # 1차: ALT 텍스트 기반 분류 (우선순위)
+                classified = False
+                for alt_pattern, korean_name in self.ALT_TEXT_MAPPING.items():
+                    if alt_pattern.lower() in alt_text.lower():
+                        if korean_name in ['불', '물', '땅', '바람', '빛', '그림자', '번개', '크리스탈']:
+                            classified_elements.append(korean_name)
+                            classified_element_icons.append(icon_path)
+                            print(f"        ✅ 속성 (ALT): {korean_name}")
+                        else:
+                            classified_weapons.append(korean_name)
+                            classified_weapon_icons.append(icon_path)
+                            print(f"        ✅ 무기 (ALT): {korean_name}")
+                        classified = True
+                        break
                 
-                # 2순위: 파일명 기반 분류 (ALT가 매핑에 없는 경우)
-                elif filename in ELEMENT_MAPPING:
-                    element_name = ELEMENT_MAPPING[filename]
-                    classified_elements.append(element_name)
-                    classified_element_icons.append(icon_path)
-                    print(f"        ✅ 속성 (파일명): {element_name}")
-                
-                elif filename in WEAPON_MAPPING:
-                    weapon_name = WEAPON_MAPPING[filename]
-                    classified_weapons.append(weapon_name)
-                    classified_weapon_icons.append(icon_path)
-                    print(f"        ⚔️ 무기 (파일명): {weapon_name}")
-                
-                elif filename in ARMOR_MAPPING:
-                    armor_name = ARMOR_MAPPING[filename]
-                    classified_armors.append(armor_name)
-                    classified_armor_icons.append(icon_path)
-                    print(f"        🛡️ 방어구 (파일명): {armor_name}")
+                # 2차: 파일명 기반 분류
+                if not classified:
+                    for filename_pattern, korean_name in self.ELEMENT_MAPPING.items():
+                        if filename_pattern.lower() in icon_filename.lower():
+                            classified_elements.append(korean_name)
+                            classified_element_icons.append(icon_path)
+                            print(f"        ✅ 속성 (파일명): {korean_name}")
+                            classified = True
+                            break
                     
-                else:
-                    print(f"        ❓ 미분류: {filename} (ALT: {alt_text})")
-                    # 미분류 아이콘은 컨텍스트에 따라 추가 처리
-                    if any(keyword in alt_text.lower() for keyword in ['light', 'shadow', 'dark']):
-                        # Light/Shadow 관련은 속성으로 분류
-                        element_name = alt_text.replace(' Icon.png', '').replace('_', ' ')
-                        classified_elements.append(element_name)
-                        classified_element_icons.append(icon_path)
-                        print(f"        ✅ 속성(추론): {element_name}")
+                    if not classified:
+                        for filename_pattern, korean_name in self.WEAPON_MAPPING.items():
+                            if filename_pattern.lower() in icon_filename.lower():
+                                classified_weapons.append(korean_name)
+                                classified_weapon_icons.append(icon_path)
+                                print(f"        ✅ 무기 (파일명): {korean_name}")
+                                classified = True
+                                break
+                
+                if not classified:
+                    print(f"        ❓ 분류 실패: {icon_filename}")
             
-            # 분류 결과로 데이터 업데이트
-            element_icons = classified_element_icons
-            weapon_icons = classified_weapon_icons
-            
-            # 텍스트 정보도 분류된 결과로 업데이트
+            # 분류된 속성과 무기 정리
             if classified_elements:
-                data['elements'] = ', '.join(classified_elements)
-            if classified_weapons:
-                data['weapons'] = ', '.join(classified_weapons)
-            else:
-                # 무기가 없으면 기본값
-                data['weapons'] = 'Obtain'
+                elements = ', '.join(list(dict.fromkeys(classified_elements)))  # 중복 제거
             
-            # 헤더 기반 텍스트 파싱 (희귀도 등 추가 정보)
-            for table in tables:
-                rows = table.find_all('tr')
-                
-                for row in rows:
-                    cells = row.find_all(['th', 'td'])
-                    if len(cells) < 2:
-                        continue
-                    
-                    # 헤더와 값 분리
-                    header_cell = cells[0]
-                    value_cell = cells[-1] if len(cells) > 1 else None
-                    
-                    if not header_cell or not value_cell:
-                        continue
-                    
-                    header_text = header_cell.get_text(strip=True).lower()
-                    value_text = value_cell.get_text(strip=True)
-                    
-                    # 희귀도 찾기
-                    if any(keyword in header_text for keyword in ['rarity', '희귀도', 'star', '별']):
-                        if '★' in value_text or 'star' in value_text.lower():
-                            data['rarity'] = value_text
-                        elif 'SA' in value_text.upper() or 'Stellar Awakened' in value_text:
-                            data['rarity'] = "5★ SA"
+            # 퍼스널리티에서 무기 추출 (레거시 방식 유지)
+            personality_weapons = self.extract_weapons_from_personalities(eng_name)
+            if personality_weapons:
+                weapons = ', '.join(personality_weapons)
+                print(f"    🗡️ 퍼스널리티에서 추출된 무기: {weapons}")
+            elif classified_weapons:
+                weapons = ', '.join(list(dict.fromkeys(classified_weapons)))
             
-            # 기본값 설정
-            if 'rarity' not in data or not data['rarity']:
-                data['rarity'] = '5★'
-            if 'elements' not in data or not data['elements']:
-                data['elements'] = 'N/A'
-            if 'weapons' not in data or not data['weapons']:
-                data['weapons'] = 'Obtain'
+            print(f"  📊 {eng_name}: 희귀도={rarity}, 속성={elements}, 무기={weapons}")
+            print(f"    🎯 속성 아이콘: {len(classified_element_icons)}개")
             
-            # 고화질 이미지 추출 및 다운로드
-            img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
-            if img_tag:
-                img_src = img_tag.get('src', '')
-                if img_src.startswith('http'):
-                    data['high_res_image_url'] = img_src
-                else:
-                    data['high_res_image_url'] = urljoin(BASE_URL, img_src)
-                
-                # 이미지 다운로드
-                kor_name = data.get('korean_name', eng_name)
-                image_path = self.download_character_image(data['high_res_image_url'], kor_name, eng_name)
-                if image_path:
-                    data['image_path'] = image_path
+            # 결과 반환
+            return {
+                'english_name': eng_name,
+                'korean_name': eng_name,
+                'rarity': rarity,
+                'elements': elements,
+                'weapons': weapons,
+                'element_icons': element_icons,  # 목록에서 수집한 전체 아이콘
+                'element_alts': element_alts,
+                'image_path': image_path or ""
+            }
             
-            # 데이터 정리
-            cleaned_data = self.clean_scraped_data(data)
-            
-            # 퍼스널리티에서 무기 추출 (스크래핑 단계에서도 적용)
-            personality_match_names = [
-                eng_name,  # 원본 이름
-                eng_name.replace(' (Another Style)', ''),  # AS 제거
-                eng_name.replace(' (Alter)', ''),  # Alter 제거  
-                eng_name.replace(' AS', ''),  # AS 제거
-                eng_name.split(' (')[0],  # 괄호 앞부분만
-                eng_name.split(' ')[0] if ' ' in eng_name else eng_name,  # 첫 번째 단어만
-            ]
-            
-            personalities = []
-            for match_name in personality_match_names:
-                if match_name in self.character_personalities:
-                    personalities = self.character_personalities[match_name]
-                    print(f"    🎯 퍼스널리티 매칭: {eng_name} → {match_name}")
-                    break
-            
-            if personalities:
-                korean_personalities = []
-                for personality in personalities:
-                    korean_personality = self.personality_mapping.get(personality, personality)
-                    korean_personalities.append(korean_personality)
-                
-                # 무기 정보 추출
-                extracted_weapons = self.extract_weapons_from_personalities(korean_personalities, personalities)
-                if extracted_weapons:
-                    cleaned_data['weapons'] = ', '.join(extracted_weapons)
-                    print(f"    🗡️ 퍼스널리티에서 추출된 무기: {', '.join(extracted_weapons)}")
-            else:
-                print(f"    ❓ 퍼스널리티를 찾을 수 없음: {eng_name}")
-                print(f"    🔍 시도한 이름들: {personality_match_names}")
-            
-            # 아이콘 정보 추가
-            cleaned_data['element_icons'] = element_icons
-            cleaned_data['weapon_icons'] = weapon_icons
-            
-            # 디버그 정보 출력
-            if cleaned_data:
-                print(f"  📊 {eng_name}: 희귀도={cleaned_data.get('rarity', 'N/A')}, 속성={cleaned_data.get('elements', 'N/A')}, 무기={cleaned_data.get('weapons', 'N/A')}")
-                if element_icons:
-                    print(f"    🎯 속성 아이콘: {len(element_icons)}개")
-                if weapon_icons:
-                    print(f"    ⚔️ 무기 아이콘: {len(weapon_icons)}개")
-                if cleaned_data.get('image_path'):
-                    print(f"    🖼️ 이미지: {cleaned_data['image_path']}")
-            
-            return cleaned_data
-            
+        except requests.exceptions.RequestException as e:
+            print(f"  ❌ 네트워크 오류: {e}")
+            return None
         except Exception as e:
-            print(f"⚠️ {eng_name} 상세 페이지 스크래핑 실패: {e}")
-            return {}
+            print(f"  ❌ 스크래핑 오류: {e}")
+            return None
     
     def scrape_all_personalities(self):
         """전체 퍼스널리티 데이터 스크래핑"""
@@ -1218,7 +1149,16 @@ class MasterScraper:
             # 5. 아이콘 다운로드 최적화 설정
             self._existing_icons = existing_icons  # 인스턴스 변수로 전달
             
-            details = self.scrape_character_details(char['detail_url'], eng_name)
+            # ★★★ 레거시 방식: 목록에서 이미 수집한 아이콘 정보 전달 ★★★
+            existing_element_icons = char.get('element_icons', [])
+            existing_element_alts = char.get('element_alts', [])
+            
+            details = self.scrape_character_details(
+                char['detail_url'], 
+                eng_name, 
+                existing_icons=existing_element_icons, 
+                existing_alts=existing_element_alts
+            )
             if details:
                 all_details.append(details)
                 scraped_count += 1
@@ -1260,7 +1200,7 @@ class MasterScraper:
 
             # 무기 정보 추출
             extracted_weapons = self.extract_weapons_from_personalities(korean_personalities, personalities)
-            
+
             processed_char = {
                 **char_data,
                 'korean_name': kor_name,
