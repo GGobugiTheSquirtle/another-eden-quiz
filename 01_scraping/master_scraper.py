@@ -332,7 +332,7 @@ class MasterScraper:
 
             # 중복 파일 체크 강화 (파일이 이미 존재하고 크기가 적절하면 스킵)
             if save_path.exists() and save_path.stat().st_size > 1000:  # 최소 1KB
-                print(f"  ✅ 이미지 이미 존재: {save_path.name}")
+                print(f"  💾 이미지 이미 존재: {save_path.name}")
                 return str(save_path.relative_to(self.project_root).as_posix())
 
             # 이미지 다운로드
@@ -346,10 +346,11 @@ class MasterScraper:
                 print(f"  ⚠️ 이미지 파일이 너무 작음: {content_length}바이트")
                 return None
 
-            # 파일 저장
+            # 파일 저장 (청크 단위로 효율적 저장)
             with open(save_path, 'wb') as f:
-                for chunk in img_response.iter_content(8192):
-                    f.write(chunk)
+                for chunk in img_response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
             
             # 저장된 파일 크기 재확인
             if save_path.stat().st_size < 1000:
@@ -419,8 +420,18 @@ class MasterScraper:
             icon_dir.mkdir(exist_ok=True)
             save_path = icon_dir / icon_filename
             
-            # 중복 파일 체크 (파일이 이미 존재하고 크기가 0보다 크면 스킵)
-            if save_path.exists() and save_path.stat().st_size > 0:
+            # 강화된 중복 파일 체크 (속도 개선)
+            # 1. 기존 인스턴스 변수 체크 (가장 빠름)
+            if hasattr(self, '_existing_icons') and icon_filename in self._existing_icons:
+                print(f"  ⚡ 아이콘 캐시 히트: {icon_filename}")
+                return str(save_path.relative_to(self.project_root).as_posix())
+            
+            # 2. 파일 시스템 체크 (파일이 이미 존재하고 크기가 충분하면 스킵)
+            if save_path.exists() and save_path.stat().st_size > 500:  # 최소 500바이트
+                print(f"  💾 기존 아이콘 재사용: {icon_filename}")
+                # 캐시에 추가
+                if hasattr(self, '_existing_icons'):
+                    self._existing_icons.add(icon_filename)
                 return str(save_path.relative_to(self.project_root).as_posix())
             
             # 중복 파일명 처리 (필요시)
@@ -1139,42 +1150,95 @@ class MasterScraper:
         # --- Phase 1: Scrape all data ---
         print("\n--- Phase 1: 모든 데이터 스크래핑 ---")
         all_details = []
-        print("�� 캐릭터 상세 정보 일괄 스크래핑 중...")
+        print("📄 캐릭터 상세 정보 일괄 스크래핑 중...")
+        
+        # 기존 아이콘 파일들 체크 (속도 개선)
+        elements_equipment_dir = IMAGE_DIR / "elements_equipment"
+        existing_icons = set()
+        if elements_equipment_dir.exists():
+            existing_icons = {f.name for f in elements_equipment_dir.glob("*") if f.is_file()}
+            print(f"💾 기존 아이콘 {len(existing_icons)}개 발견 - 중복 다운로드 방지")
         
         skipped_count = 0
         scraped_count = 0
+        total_chars = len(characters)
         
         for i, char in enumerate(characters, 1):
             eng_name = char['english_name']
+            kor_name = char.get('korean_name', '')
             
-            # 중복 체크 (기존 데이터가 있고 이미지도 존재하면 스킵)
+            # 강화된 중복 체크
+            skip_character = False
+            skip_reason = ""
+            
+            # 1. 기존 CSV 데이터 체크
             if eng_name in existing_data:
-                # 이미지 파일도 체크
-                normalized_name = self.normalize_image_filename(char.get('korean_name', ''), eng_name)
+                existing_char = existing_data[eng_name]
+                
+                # 2. 캐릭터 이미지 파일 체크
+                normalized_name = self.normalize_image_filename(kor_name, eng_name)
                 image_path = IMAGE_DIR / normalized_name
                 
-                if image_path.exists() and image_path.stat().st_size > 0:
-                    print(f"[{i}/{len(characters)}] {eng_name} - 이미 처리됨, 스킵")
-                    skipped_count += 1
-                    # 기존 데이터 사용
-                    existing_char_data = {
-                        'english_name': eng_name,
-                        'korean_name': char.get('korean_name', ''),
-                        'image_path': str(image_path.relative_to(self.project_root).as_posix())
-                    }
-                    all_details.append(existing_char_data)
-                    continue
+                # 3. 필수 데이터 완전성 체크
+                has_complete_data = all([
+                    existing_char.get('rarity'),
+                    existing_char.get('elements') != 'N/A',
+                    existing_char.get('weapons') != 'Obtain' or existing_char.get('weapons'),
+                    image_path.exists() and image_path.stat().st_size > 1024  # 최소 1KB
+                ])
+                
+                if has_complete_data:
+                    skip_character = True
+                    skip_reason = "완전한 데이터 존재"
+                elif image_path.exists():
+                    skip_character = True
+                    skip_reason = "이미지 존재 (데이터 불완전)"
             
-            print(f"[{i}/{len(characters)}] {eng_name} 상세 정보 가져오는 중...")
+            # 4. 퍼센티지 기반 스킵 표시
+            progress_pct = (i / total_chars) * 100
+            
+            if skip_character:
+                print(f"[{i}/{total_chars}] ({progress_pct:.1f}%) {eng_name} - {skip_reason}, 스킵 ⚡")
+                skipped_count += 1
+                
+                # 기존 데이터 재사용
+                existing_char_data = {
+                    'english_name': eng_name,
+                    'korean_name': kor_name,
+                    'rarity': existing_data[eng_name].get('rarity', '5★'),
+                    'elements': existing_data[eng_name].get('elements', 'N/A'),
+                    'weapons': existing_data[eng_name].get('weapons', 'Obtain'),
+                    'image_path': str(image_path.relative_to(self.project_root).as_posix()) if image_path.exists() else ''
+                }
+                all_details.append(existing_char_data)
+                continue
+            
+            print(f"[{i}/{total_chars}] ({progress_pct:.1f}%) {eng_name} 새로 스크래핑 중... 🔄")
+            
+            # 5. 아이콘 다운로드 최적화 설정
+            self._existing_icons = existing_icons  # 인스턴스 변수로 전달
+            
             details = self.scrape_character_details(char['detail_url'], eng_name)
-            all_details.append(details)
-            scraped_count += 1
+            if details:
+                all_details.append(details)
+                scraped_count += 1
+                
+                # 새로 다운로드된 아이콘들을 기존 목록에 추가
+                element_icons = details.get('element_icons', [])
+                for icon_path in element_icons:
+                    icon_filename = os.path.basename(icon_path)
+                    existing_icons.add(icon_filename)
             
-            # 진행 상황 출력
-            if i % 50 == 0:
-                print(f"  📊 진행률: {i}/{len(characters)} ({i/len(characters)*100:.1f}%) - 스킵: {skipped_count}, 스크래핑: {scraped_count}")
+            # 진행률 요약 (매 20개마다)
+            if i % 20 == 0 or i == total_chars:
+                print(f"  📊 진행률: {progress_pct:.1f}% | 스킵: {skipped_count}개 | 스크래핑: {scraped_count}개")
             
-            time.sleep(0.5)  # 서버 부하 방지를 위해 대기 시간 증가
+            # 적응형 대기시간 (스킵된 경우 대기 없음, 스크래핑한 경우만 대기)
+            if not skip_character:
+                time.sleep(0.3)  # 서버 부하 방지를 위한 짧은 대기
+        
+        print(f"\n✅ Phase 1 완료: 총 {total_chars}개 중 {skipped_count}개 스킵, {scraped_count}개 새로 스크래핑")
+        print(f"⚡ 속도 개선: {(skipped_count/total_chars)*100:.1f}% 중복 제거로 시간 단축")
 
         # --- Phase 2: Process all data ---
         print("\n--- Phase 2: 모든 데이터 처리 ---")
