@@ -1,13 +1,9 @@
-[general]
-dataFrameSerialization = "legacy"
+[theme]
+primaryColor = "#667eea"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
 
 [server]
-headless = true
 enableCORS = false
 enableXsrfProtection = false
-
-[theme]
-primaryColor = "#FF6B6B"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F0F2F6"
-textColor = "#262730"
