@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 🎮 Another Eden 캐릭터 퀴즈쇼 앱
 기존 룰렛 시스템을 확장하여 다양한 퀴즈 게임 모드를 제공합니다.
@@ -9,29 +10,27 @@ import streamlit as st
 import random
 import time
 from typing import List, Dict, Any
-import streamlit.components.v1 as components
 import base64
-import html
-import re
 from pathlib import Path
 import unicodedata
 import json
 from datetime import datetime
 
-# 프로젝트 루트 절대경로
-BASE_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = BASE_DIR.parent.parent
+# --- 경로 설정 ---
+APP_DIR = Path(__file__).parent.parent.parent.resolve()
+PROJECT_ROOT = APP_DIR
 DATA_DIR = PROJECT_ROOT / "04_data"
 CSV_DIR = DATA_DIR / "csv"
 IMAGE_DIR = DATA_DIR / "images" / "character_art"
 
+# 페이지 설정
 st.set_page_config(
     page_title="🎮 Another Eden 퀴즈쇼", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS 스타일
+# --- CSS 스타일 ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
@@ -46,16 +45,13 @@ st.markdown("""
             padding: 1rem !important;
             margin: 0.5rem 0 !important;
         }
-        
         .quiz-options {
             grid-template-columns: 1fr !important;
             gap: 1rem !important;
         }
-        
         .quiz-question {
             font-size: 1.4rem !important;
         }
-        
         .quiz-option {
             padding: 1rem !important;
             font-size: 1rem !important;
@@ -78,14 +74,8 @@ st.markdown("""
     }
     
     @keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
     @keyframes pulse {
@@ -100,393 +90,242 @@ st.markdown("""
         75% { transform: translateX(5px); }
     }
     
-    @keyframes silhouetteReveal {
-        0% { 
-            filter: brightness(0) contrast(0);
-            transform: scale(0.8);
-        }
-        50% { 
-            filter: brightness(0.3) contrast(0.5);
-            transform: scale(0.9);
-        }
-        100% { 
-            filter: brightness(1) contrast(1);
-            transform: scale(1);
-        }
-    }
-    
     .silhouette-image {
-        filter: brightness(0) contrast(0) saturate(0);
-        transition: all 1.2s ease-in-out;
-        animation: silhouetteReveal 1.2s ease-in-out;
-        transform: scale(0.95);
+        filter: brightness(0);
+        transition: filter 0.5s ease-in-out;
     }
     
-    .silhouette-revealed {
-        filter: brightness(1) contrast(1) saturate(1) !important;
-        animation: none !important;
-        transform: scale(1) !important;
-    }
-    
-    @keyframes silhouetteReveal {
-        0% {
-            filter: brightness(0) contrast(0) saturate(0);
-            transform: scale(0.95);
-        }
-        50% {
-            filter: brightness(0.3) contrast(0.3) saturate(0.3);
-            transform: scale(0.98);
-        }
-        100% {
-            filter: brightness(1) contrast(1) saturate(1);
-            transform: scale(1);
-        }
-    }
-    
-    .quiz-result {
-        padding: 1.5rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        text-align: center;
-        font-weight: bold;
-        font-size: 1.2rem;
-        animation: slideInUp 0.5s ease-out;
-    }
-    
-    .quiz-result.correct {
-        background: linear-gradient(135deg, #4CAF50, #45a049);
-        color: white;
-        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
-    }
-    
-    .quiz-result.incorrect {
-        background: linear-gradient(135deg, #f44336, #d32f2f);
-        color: white;
-        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
-    }
-    
-    .quiz-result.partial {
-        background: linear-gradient(135deg, #ff9800, #f57c00);
-        color: white;
-        box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
-    }
-    
-    @keyframes slideInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .next-question-btn {
-        background: linear-gradient(135deg, #2196F3, #1976D2);
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 25px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 1rem 0;
-        box-shadow: 0 5px 15px rgba(33, 150, 243, 0.3);
-    }
-    
-    .next-question-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(33, 150, 243, 0.4);
-    }
-    
-    .retry-btn {
-        background: linear-gradient(135deg, #FF9800, #F57C00);
-        color: white;
-        border: none;
-        padding: 0.8rem 1.5rem;
-        border-radius: 20px;
-        font-size: 1rem;
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 0.5rem;
-        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
-    }
-    
-    .retry-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
-    }
-    }
-    
-    .quiz-question {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 2.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        line-height: 1.6;
-        padding: 0 1rem;
+    .silhouette-image.revealed {
+        filter: brightness(1);
     }
     
     .quiz-options {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 2rem;
-        margin: 3rem 0;
-        padding: 0 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
     }
     
     .quiz-option {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 15px;
         padding: 1.5rem;
-        border-radius: 20px;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 3px solid transparent;
         backdrop-filter: blur(10px);
-        position: relative;
-        overflow: hidden;
-        font-size: 1.1rem;
-        font-weight: 500;
-        min-height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }
-    
-    .quiz-option::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-        transition: left 0.5s;
-    }
-    
-    .quiz-option:hover::before {
-        left: 100%;
     }
     
     .quiz-option:hover {
-        background: rgba(255, 255, 255, 0.3);
-        border-color: #FFD700;
-        transform: translateY(-5px);
-        box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-2px);
     }
     
-    .correct-answer {
-        background: rgba(76, 175, 80, 0.9) !important;
-        border-color: #4CAF50 !important;
+    .quiz-option.correct {
+        background: rgba(76, 175, 80, 0.3);
+        border-color: #4CAF50;
         animation: pulse 0.6s ease-in-out;
     }
     
-    .wrong-answer {
-        background: rgba(244, 67, 54, 0.9) !important;
-        border-color: #F44336 !important;
+    .quiz-option.incorrect {
+        background: rgba(244, 67, 54, 0.3);
+        border-color: #F44336;
         animation: shake 0.6s ease-in-out;
     }
     
-    .quiz-image {
-        max-width: 200px;
-        max-height: 200px;
-        border-radius: 15px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        margin: 1rem auto;
-        display: block;
+    .quiz-question {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
     }
     
-    .timer-container {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 1rem;
-        border-radius: 15px;
-        margin: 1rem 0;
-        text-align: center;
-    }
-    
-    .timer-bar {
-        height: 8px;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 4px;
-        overflow: hidden;
-        margin: 0.5rem 0;
-    }
-    
-    .timer-progress {
-        height: 100%;
-        background: linear-gradient(90deg, #FFD700, #FFA500);
-        transition: width 1s linear;
-        border-radius: 4px;
-    }
-    
-    .stats-container {
+    .character-hint {
         background: rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
         border-radius: 15px;
+        padding: 1.5rem;
         margin: 1rem 0;
         backdrop-filter: blur(10px);
     }
     
-    .hint-button {
-        background: rgba(255, 193, 7, 0.8);
-        color: #000;
-        border: none;
-        padding: 0.8rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 0.5rem;
+    .character-hint h4 {
+        color: #FFD700;
+        margin-bottom: 1rem;
     }
     
-    .hint-button:hover {
-        background: rgba(255, 193, 7, 1);
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+    .character-hint ul {
+        list-style: none;
+        padding: 0;
     }
     
-    .game-mode-button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 25px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin: 0.5rem;
-        font-size: 1rem;
+    .character-hint li {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
     }
     
-    .game-mode-button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    .score-display {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1rem;
+        margin: 1rem 0;
+        text-align: center;
+        backdrop-filter: blur(10px);
     }
     
-    .game-mode-button.active {
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-        color: #000;
+    .timer-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #FFD700;
+        text-align: center;
+        margin: 1rem 0;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+    
+    .stat-card {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        backdrop-filter: blur(10px);
+    }
+    
+    .stat-card h3 {
+        color: #FFD700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-card p {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0;
     }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) 
+
+# --- 유틸리티 함수들 ---
+def normalize_text(text: str) -> str:
+    """텍스트 정규화 (한글/영문 혼용 지원)"""
+    if pd.isna(text):
+        return ""
+    
+    # 유니코드 정규화
+    normalized = unicodedata.normalize('NFKC', str(text))
+    
+    # 공백 제거 및 소문자 변환
+    cleaned = normalized.strip().lower()
+    
+    return cleaned
 
 def safe_icon_to_data_uri(path: str) -> str:
-    """아이콘 경로를 data URI로 안전하게 변환"""
-    placeholder = "data:image/gif;base64,R0lGODlhEAAQAIABAP///wAAACH5BAEKAAEALAAAAAAQABAAAAIijI+py+0Po5yUFQA7"
-    
+    """안전한 아이콘 경로를 data URI로 변환"""
     if pd.isna(path) or not path:
-        return placeholder
-    
-    def normalize_path(p: str) -> str:
-        p = unicodedata.normalize("NFKC", str(p))
-        return p.replace("\\", "/").strip().lstrip("\ufeff").replace("\u00A0", "")
-    
-    path = normalize_path(path)
-    if not path:
-        return placeholder
-    if path.startswith(("http://", "https://", "data:image")):
-        return path
-    
-    # 상대 경로를 절대 경로로 변환
-    if not os.path.isabs(path):
-        # 실제 프로젝트 구조에 맞춘 검색 경로들
-        search_dirs = [
-            IMAGE_DIR,  # 메인 이미지 디렉토리
-            DATA_DIR / "images" / "character_art",  # 정확한 이미지 경로
-            DATA_DIR / "images" / "character_art" / "elements_equipment",  # 속성/무기 아이콘 디렉토리
-            BASE_DIR / "04_data" / "images" / "character_art",  # 프로젝트 루트 기준
-            BASE_DIR / "04_data" / "images" / "character_art" / "elements_equipment",  # 속성/무기 아이콘
-            Path.cwd() / "04_data" / "images" / "character_art",  # 현재 작업 디렉토리 기준
-            Path.cwd() / "04_data" / "images" / "character_art" / "elements_equipment"  # 속성/무기 아이콘
-        ]
-        
-        file_name = os.path.basename(path)
-        for search_dir in search_dirs:
-            if search_dir.exists():
-                potential_path = search_dir / file_name
-                if potential_path.exists():
-                    path = str(potential_path)
-                    break
-                # 대소문자 구분 없이 검색
-                try:
-                    for f in os.listdir(search_dir):
-                        if f.lower() == file_name.lower():
-                            path = str(search_dir / f)
-                            break
-                except Exception:
-                    continue
-    
-    if not os.path.exists(path):
-        return placeholder
+        return ""
     
     try:
-        with open(path, "rb") as img_file:
-            b64_str = base64.b64encode(img_file.read()).decode()
-        return f"data:image/png;base64,{b64_str}"
-    except Exception:
-        return placeholder
+        # 경로 정규화
+        icon_path = Path(path)
+        
+        # 상대 경로인 경우 절대 경로로 변환
+        if not icon_path.is_absolute():
+            icon_path = IMAGE_DIR / icon_path.name
+        
+        if icon_path.exists():
+            with open(icon_path, 'rb') as f:
+                image_data = f.read()
+                mime_type = 'image/png' if icon_path.suffix.lower() == '.png' else 'image/jpeg'
+                encoded = base64.b64encode(image_data).decode()
+                return f"data:{mime_type};base64,{encoded}"
+        else:
+            # 파일이 없으면 기본 이미지 반환
+            return ""
+    except Exception as e:
+        print(f"이미지 로딩 오류: {e}")
+        return ""
 
 @st.cache_data
 def load_character_data():
-<<<<<<< HEAD
-    """캐릭터 데이터 로드 (통합 버전)"""
-    # 통합 데이터 파일 우선 시도
-    csv_path = CSV_DIR / "eden_unified_data.csv"
-    if not csv_path.exists():
-        csv_path = CSV_DIR / "eden_quiz_data.csv"
+    """캐릭터 데이터 로드 (개선된 경로 처리)"""
+    # 다양한 경로 시도
+    possible_paths = [
+        CSV_DIR / "eden_quiz_data.csv",
+        CSV_DIR / "eden_roulette_data.csv", 
+        CSV_DIR / "character_personalities.csv",
+        PROJECT_ROOT / "04_data" / "csv" / "eden_quiz_data.csv",
+        PROJECT_ROOT / "04_data" / "csv" / "eden_roulette_data.csv",
+        Path("04_data/csv/eden_quiz_data.csv"),
+        Path("04_data/csv/eden_roulette_data.csv"),
+        Path("eden_quiz_data.csv"),
+        Path("eden_roulette_data.csv"),
+        Path("character_personalities.csv")
+    ]
     
-    if not csv_path.exists():
-        st.error("📋 퀴즈 데이터 파일이 없습니다.")
-        st.info("💡 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
+    # Streamlit Cloud 환경 감지
+    is_cloud = os.environ.get('STREAMLIT_SHARING', False) or '/app' in str(Path.cwd())
+    
+    if is_cloud:
+        cloud_paths = [
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/04_data/csv/eden_roulette_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_roulette_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_roulette_data.csv")
+        ]
+        possible_paths.extend(cloud_paths)
+    
+    # 파일 찾기
+    csv_path = None
+    for path in possible_paths:
+        if path.exists():
+            csv_path = path
+            break
+    
+    if not csv_path:
+        st.error("📋 데이터 파일을 찾을 수 없습니다.")
+        st.info("💡 다음 중 하나의 파일이 필요합니다:")
+        st.info("- eden_quiz_data.csv")
+        st.info("- eden_roulette_data.csv") 
+        st.info("- character_personalities.csv")
+        st.info("📡 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
         st.stop()
     
-    # 파일 읽기 (여러 인코딩 시도)
     try:
-        df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
-    except UnicodeDecodeError:
-        try:
-            df = pd.read_csv(csv_path, encoding='cp949').fillna('')
-        except Exception as e:
-            st.error(f"❌ 파일 읽기 실패: {str(e)}")
-            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+        # CSV 파일 로드
+        df = pd.read_csv(csv_path, encoding='utf-8')
+        
+        # 필수 컬럼 확인
+        required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            st.error(f"❌ 필수 컬럼이 누락되었습니다: {missing_columns}")
+            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
             st.stop()
+        
+        # 출시일 컬럼이 없는 경우 대비
+        if '출시일' not in df.columns:
+            df['출시일'] = ''
+        
+        # 퍼스널리티 컬럼이 없는 경우 대비
+        if '퍼스널리티리스트' not in df.columns:
+            df['퍼스널리티리스트'] = ''
+        
+        st.success(f"✅ 캐릭터 데이터 로드 완료: {len(df)}명의 캐릭터")
+        return df
+        
     except Exception as e:
-        st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
-        st.stop()
-        st.stop()
-    
-    # 데이터 검증
-    if len(df) == 0:
-        st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
-        st.stop()
-    
-    # 필수 컬럼 확인 (유연하게)
-    if '캐릭터명' not in df.columns:
-        # 영문명만 있는 경우 캐릭터명으로 사용
-        if '영문명' in df.columns:
-            df['캐릭터명'] = df['영문명']
-        elif 'english_name' in df.columns:
-            df['캐릭터명'] = df['english_name']
-    
-    # 기타 필요 컬럼 기본값 설정
-    if '희귀도' not in df.columns:
-        df['희귀도'] = ''
-    if '속성명리스트' not in df.columns:
-        df['속성명리스트'] = ''
-    if '무기명리스트' not in df.columns:
-        df['무기명리스트'] = ''
-    if '퍼스널리티리스트' not in df.columns and '성격특성리스트' in df.columns:
-        df['퍼스널리티리스트'] = df['성격특성리스트']
-    if '퍼스널리티리스트' not in df.columns:
-        df['퍼스널리티리스트'] = ''
-    if '출시일' not in df.columns:
-        df['출시일'] = ''
-    
-    return df
+        st.error(f"❌ 데이터 로딩 중 오류 발생: {str(e)}")
+        st.info("💡 파일 형식을 확인하거나 스크래퍼를 다시 실행하세요.")
+        st.stop() 
 
 class QuizGame:
     def __init__(self, df: pd.DataFrame):
@@ -514,14 +353,13 @@ class QuizGame:
         self.silhouette_revealed = False
         self.current_question_data = None
         self.answer_attempted = False
-<<<<<<< HEAD
         # 틀린 문제 추적
         self.wrong_questions = []
         self.correct_questions = []
         self.question_history = []
         # 현재 퀴즈 유형 추적
         self.current_quiz_type = None
-        
+
     def get_random_characters(self, n: int = 4, max_rarity: int = 5, use_all_characters: bool = False) -> List[Dict]:
         """랜덤 캐릭터 n명 선택 (희귀도 제한 가능)"""
         filtered_df = self.df.copy()
@@ -543,8 +381,8 @@ class QuizGame:
         
         if len(filtered_df) < n:
             return filtered_df.to_dict('records')
-        return filtered_df.sample(n=n).to_dict('records')
-    
+        return filtered_df.sample(n=n).to_dict('records') 
+
     def generate_quiz_question(self, quiz_type: str) -> Dict[str, Any]:
         """퀴즈 문제 생성 (새 구조)"""
         
@@ -578,196 +416,48 @@ class QuizGame:
             options = [char.get('캐릭터명', '') for char in characters]
             correct_answer = correct_char.get('캐릭터명', '')
             
-        elif quiz_type == "guess_personality_fillblank":
-            # 새로운 퍼스널리티 빈칸 맞추기 퀴즈
-            personality_list = str(correct_char.get('퍼스널리티리스트', '')).split(',')
-            personality_list = [p.strip() for p in personality_list if p.strip() and len(p.strip()) > 2]
-            
-            # 속성/무기 퍼스널리티 제외 
-            clean_personalities = []
-            for personality in personality_list:
-                is_element = any(keyword in personality.lower() for keyword in [
-                    'fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal', 'thunder', 'shade',
-                    '땅', '불', '바람', '물', '빛', '어둠', '번개', '크리스탈', '화', '수', '지', '풍'
-                ])
-                is_weapon = any(keyword in personality.lower() for keyword in [
-                    'sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance',
-                    '검', '도', '도끼', '망치', '창', '활', '지팡이', '주먹', '랜스', '권갑'
-                ])
-                if not is_element and not is_weapon:
-                    clean_personalities.append(personality)
-            
-            if not clean_personalities:
-                clean_personalities = ['모험가', '용감한', '친절한', '신중한']
-            
-            # 빈칸 만들기 (한 개의 퍼스널리티를 빈칸으로)
-            if len(clean_personalities) >= 3:
-                selected_personalities = random.sample(clean_personalities, min(3, len(clean_personalities)))
-                blank_index = random.randint(0, len(selected_personalities) - 1)
-                correct_answer = selected_personalities[blank_index]
-                
-                # 빈칸 퍼스널리티 리스트 만들기
-                display_personalities = selected_personalities.copy()
-                display_personalities[blank_index] = "___"
-                
-                question = f"{correct_char.get('캐릭터명', '')}의 퍼스널리티는 [{', '.join(display_personalities)}]입니다. 빈 칸에 들어갈 퍼스널리티는?"
-                hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-                
-                # 오답 선택지 생성 (다른 캐릭터들의 퍼스널리티에서)
-                all_personalities = set()
-                for char in self.df.to_dict('records'):
-                    char_personalities = str(char.get('퍼스널리티리스트', '')).split(',')
-                    for p in char_personalities:
-                        p = p.strip()
-                        if p and len(p.strip()) > 2:
-                            # 속성/무기 제외
-                            is_element = any(keyword in p.lower() for keyword in [
-                                'fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal', 'thunder',
-                                '땅', '불', '바람', '물', '빛', '어둠', '번개', '크리스탈'
-                            ])
-                            is_weapon = any(keyword in p.lower() for keyword in [
-                                'sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist',
-                                '검', '도', '도끼', '망치', '창', '활', '지팡이', '주먹'
-                            ])
-                            if not is_element and not is_weapon:
-                                all_personalities.add(p)
-                
-                # 정답과 다른 3개 선택지
-                wrong_options = [p for p in all_personalities if p != correct_answer]
-                if len(wrong_options) >= 3:
-                    options = [correct_answer] + random.sample(wrong_options, 3)
-                else:
-                    default_options = ['용감한', '친절한', '신중한', '활발한', '차분한', '열정적']
-                    options = [correct_answer]
-                    for opt in default_options:
-                        if opt != correct_answer and len(options) < 4:
-                            options.append(opt)
-            else:
-                # 퍼스널리티가 부족한 경우 기본 퀴즈
-                question = f"{correct_char.get('캐릭터명', '')}와 어울리는 퍼스널리티는?"
-                hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-                options = ['용감한', '친절한', '신중한', '활발한']
-                correct_answer = options[0]
+        elif quiz_type == "guess_rarity":
+            question = "이 캐릭터의 희귀도는 무엇일까요?"
+            hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
+            options = [char.get('희귀도', '') for char in characters]
+            correct_answer = correct_char.get('희귀도', '')
             
         elif quiz_type == "guess_element":
-            question = f"{correct_char.get('캐릭터명', '')}의 속성은? (3-4성 최대)"
+            question = "이 캐릭터의 속성은 무엇일까요? (3-4성 최대)"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-            # 3-4성 최대 캐릭터의 속성 리스트에서 선택
-            filtered_df = self.df[self.df['희귀도'].str.contains(r'[1-4]★', na=False)]
-            all_elements = []
-            for char in filtered_df.to_dict('records'):
-                elements = str(char.get('속성명리스트', '')).split(',')
-                all_elements.extend([elem.strip() for elem in elements if elem.strip()])
-            unique_elements = list(set(all_elements))
-            
-            # 옵션 리스트가 비어있지 않은지 확인
-            if not unique_elements:
-                unique_elements = ['Fire', 'Water', 'Earth', 'Wind', 'Thunder', 'Crystal', 'Shade']
-            
-            # 안전한 옵션 생성
-            if len(unique_elements) >= 4:
-                options = random.sample(unique_elements, 4)
-            else:
-                options = unique_elements.copy()
-                while len(options) < 4:
-                    options.append(random.choice(['Fire', 'Water', 'Earth', 'Wind', 'Thunder', 'Crystal', 'Shade']))
-            
-            char_elements = str(correct_char.get('속성명리스트', '')).split(',')
-            char_elements = [elem.strip() for elem in char_elements if elem.strip()]
-            if char_elements and char_elements[0] not in options and options:
-                options[0] = char_elements[0]
-            correct_answer = char_elements[0] if char_elements else ''
-            
-        elif quiz_type == "guess_release_date_order":
-            # 새로운 출시일 순서 맞추기 퀴즈
-            valid_dates_df = self.df[self.df['출시일'].notna() & (self.df['출시일'] != '')]
-            
-            if len(valid_dates_df) < 3:
-                # 출시일 데이터가 부족한 경우 기본 퀴즈
-                question = "다음 캐릭터들을 출시일 순서대로 배열하세요 (오래된 것부터)"
-                hint_image = ""
-                options = ["가장 먼저", "두 번째", "세 번째", "가장 나중"]
-                correct_answer = "가장 먼저"
-            else:
-                # 출시일이 있는 캐릭터 중 3-4명 선택
-                date_characters = valid_dates_df.sample(n=min(4, len(valid_dates_df))).to_dict('records')
-                
-                # 출시일 순으로 정렬
-                date_characters.sort(key=lambda x: x.get('출시일', ''))
-                
-                char_names = [char.get('캐릭터명', '') for char in date_characters]
-                char_dates = [char.get('출시일', '') for char in date_characters]
-                
-                # 순서를 섞어서 문제 만들기
-                shuffled_names = char_names.copy()
-                random.shuffle(shuffled_names)
-                
-                question = f"다음 캐릭터들을 출시일 순서대로 배열하세요 (오래된 것부터): {', '.join(shuffled_names)}"
-                hint_image = ""
-                
-                # 선택지는 정답 순서
-                correct_order = " → ".join(char_names)
-                
-                # 여러 가지 잘못된 순서 만들기
-                wrong_orders = []
-                for _ in range(3):
-                    wrong_list = char_names.copy()
-                    random.shuffle(wrong_list)
-                    wrong_order = " → ".join(wrong_list)
-                    if wrong_order != correct_order and wrong_order not in wrong_orders:
-                        wrong_orders.append(wrong_order)
-                
-                # 옵션이 부족하면 추가 생성
-                while len(wrong_orders) < 3:
-                    wrong_list = char_names.copy()
-                    # 일부만 바꾸기
-                    if len(wrong_list) >= 2:
-                        i, j = random.sample(range(len(wrong_list)), 2)
-                        wrong_list[i], wrong_list[j] = wrong_list[j], wrong_list[i]
-                    wrong_order = " → ".join(wrong_list)
-                    if wrong_order != correct_order and wrong_order not in wrong_orders:
-                        wrong_orders.append(wrong_order)
-                
-                options = [correct_order] + wrong_orders[:3]
-                correct_answer = correct_order
-            
+            options = [char.get('속성명리스트', '') for char in characters]
+            correct_answer = correct_char.get('속성명리스트', '')
             
         elif quiz_type == "guess_weapon":
-            question = f"{correct_char.get('캐릭터명', '')}의 무기는? (3-4성 최대)"
+            question = "이 캐릭터가 사용하는 무기는 무엇일까요? (3-4성 최대)"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
-            # 3-4성 최대 캐릭터의 무기 리스트에서 선택
-            filtered_df = self.df[self.df['희귀도'].str.contains(r'[1-4]★', na=False)]
-            all_weapons = []
-            for char in filtered_df.to_dict('records'):
-                weapons = str(char.get('무기명리스트', '')).split(',')
-                all_weapons.extend([weapon.strip() for weapon in weapons if weapon.strip()])
-            unique_weapons = list(set(all_weapons))
+            options = [char.get('무기명리스트', '') for char in characters]
+            correct_answer = correct_char.get('무기명리스트', '')
             
-            # 옵션 리스트가 비어있지 않은지 확인
-            if not unique_weapons:
-                unique_weapons = ['Sword', 'Katana', 'Axe', 'Hammer', 'Lance', 'Bow', 'Staff', 'Fists']
+        elif quiz_type == "guess_personality":
+            question = "이 캐릭터의 퍼스널리티는 무엇일까요?"
+            hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
+            options = [char.get('퍼스널리티리스트', '') for char in characters]
+            correct_answer = correct_char.get('퍼스널리티리스트', '')
             
-            # 안전한 옵션 생성
-            if len(unique_weapons) >= 4:
-                options = random.sample(unique_weapons, 4)
-            else:
-                options = unique_weapons.copy()
-                while len(options) < 4:
-                    options.append(random.choice(['Sword', 'Katana', 'Axe', 'Hammer', 'Lance', 'Bow', 'Staff', 'Fists']))
+        elif quiz_type == "guess_release_date":
+            question = "이 캐릭터의 출시일은 언제일까요?"
+            hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
+            options = [char.get('출시일', '') for char in characters]
+            correct_answer = correct_char.get('출시일', '')
             
-            char_weapons = str(correct_char.get('무기명리스트', '')).split(',')
-            char_weapons = [weapon.strip() for weapon in char_weapons if weapon.strip()]
-            if char_weapons and char_weapons[0] not in options and options:
-                options[0] = char_weapons[0]
-            correct_answer = char_weapons[0] if char_weapons else ''
-        
-        else:  # silhouette_quiz
-            question = "실루엣을 보고 캐릭터를 맞춰보세요! (전체캐릭터 대상)"
+        elif quiz_type == "silhouette_quiz":
+            question = "이 실루엣의 캐릭터는 누구일까요?"
             hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
             options = [char.get('캐릭터명', '') for char in characters]
             correct_answer = correct_char.get('캐릭터명', '')
-        
-        random.shuffle(options)
+            
+        else:
+            # 기본 이름 맞추기
+            question = "이 캐릭터의 이름은 무엇일까요?"
+            hint_image = safe_icon_to_data_uri(correct_char.get('캐릭터아이콘경로', ''))
+            options = [char.get('캐릭터명', '') for char in characters]
+            correct_answer = correct_char.get('캐릭터명', '')
         
         return {
             'question': question,
@@ -777,570 +467,284 @@ class QuizGame:
             'character_info': correct_char,
             'quiz_type': quiz_type
         }
-    
-    def start_timer(self):
-        """타이머 시작"""
-        self.question_start_time = time.time()
-        if self.start_time is None:
-            self.start_time = time.time()
-    
-    def get_remaining_time(self):
-        """남은 시간 반환"""
-        if self.question_start_time is None:
-            return self.time_limit
-        elapsed = time.time() - self.question_start_time
-        return max(0, self.time_limit - elapsed)
-    
-    def is_time_up(self):
-        """시간 초과 여부 확인"""
-        return self.get_remaining_time() <= 0
-    
-    def use_hint_fifty_fifty(self, options, correct_answer):
-        """50:50 힌트 사용"""
-        if self.hints_used >= 2:  # 최대 2개 힌트만 사용 가능
-            return options
+
+    def process_answer(self, selected_answer: str, correct_answer: str, quiz_type: str):
+        """답안 처리 및 점수 계산"""
+        is_correct = normalize_text(selected_answer) == normalize_text(correct_answer)
         
-        self.hints_used += 1
-        wrong_options = [opt for opt in options if opt != correct_answer]
-        # 틀린 선택지 중 2개만 남기고 제거
-        if len(wrong_options) > 2:
-            keep_wrong = random.sample(wrong_options, 2)
-            return [correct_answer] + keep_wrong
-        return options
-    
-    def add_time_bonus(self):
-        """시간 보너스 힌트 사용"""
-        if self.hints_used >= 2:
-            return False
+        # 시간 계산
+        if self.question_start_time:
+            time_taken = time.time() - self.question_start_time
+        else:
+            time_taken = 0
         
-        self.hints_used += 1
-        self.time_limit += 15  # 15초 추가
-        return True
-    
-    def update_stats(self, is_correct, quiz_type, time_taken, retry_count=0, question_data=None):
-        """통계 업데이트 (개선된 시스템)"""
-        base_score = 100
-        
-        # 재시도 페널티 적용
-        if retry_count > 0:
-            penalty = self.retry_penalty * retry_count
-            base_score = int(base_score * (1 - penalty))
+        # 점수 계산 (시간 보너스 포함)
+        base_score = 10
+        time_bonus = max(0, (self.time_limit - time_taken) / self.time_limit * 5)
+        total_score = base_score + time_bonus
         
         if is_correct:
-            self.session_stats['correct_answers'] += 1
+            # 정답인 경우
+            self.score += total_score
             self.combo_count += 1
             self.max_combo = max(self.max_combo, self.combo_count)
-            self.score += base_score
+            self.session_stats['correct_answers'] += 1
+            
+            # 카테고리별 통계 업데이트
+            if quiz_type not in self.session_stats['category_stats']:
+                self.session_stats['category_stats'][quiz_type] = {'correct': 0, 'total': 0}
+            self.session_stats['category_stats'][quiz_type]['correct'] += 1
+            self.session_stats['category_stats'][quiz_type]['total'] += 1
             
             # 정답 문제 기록
-            if question_data:
-                self.correct_questions.append({
-                    'question': question_data.get('question', ''),
-                    'correct_answer': question_data.get('correct_answer', ''),
-                    'quiz_type': quiz_type,
-                    'time_taken': time_taken
-                })
+            self.correct_questions.append({
+                'question': self.current_question_data['question'],
+                'correct_answer': correct_answer,
+                'user_answer': selected_answer,
+                'quiz_type': quiz_type,
+                'time_taken': time_taken,
+                'score': total_score
+            })
+            
         else:
-            self.session_stats['wrong_answers'] += 1
+            # 오답인 경우
             self.combo_count = 0
-            # 부분 점수 (재시도 기회가 남아있을 때)
-            if retry_count < self.max_retries:
-                partial_score = int(base_score * self.partial_score)
-                self.score += partial_score
+            self.session_stats['wrong_answers'] += 1
+            
+            # 카테고리별 통계 업데이트
+            if quiz_type not in self.session_stats['category_stats']:
+                self.session_stats['category_stats'][quiz_type] = {'correct': 0, 'total': 0}
+            self.session_stats['category_stats'][quiz_type]['total'] += 1
             
             # 틀린 문제 기록
-            if question_data:
-                self.wrong_questions.append({
-                    'question': question_data.get('question', ''),
-                    'correct_answer': question_data.get('correct_answer', ''),
-                    'user_answer': question_data.get('user_answer', ''),
-                    'quiz_type': quiz_type,
-                    'time_taken': time_taken
-                })
-        
-        # 문제 히스토리 기록
-        if question_data:
-            self.question_history.append({
-                'question': question_data.get('question', ''),
-                'correct_answer': question_data.get('correct_answer', ''),
-                'user_answer': question_data.get('user_answer', ''),
+            self.wrong_questions.append({
+                'question': self.current_question_data['question'],
+                'correct_answer': correct_answer,
+                'user_answer': selected_answer,
                 'quiz_type': quiz_type,
-                'is_correct': is_correct,
                 'time_taken': time_taken
             })
         
+        self.total_questions += 1
         self.session_stats['total_time'] += time_taken
         
-        # 카테고리별 통계
-        if quiz_type not in self.session_stats['category_stats']:
-            self.session_stats['category_stats'][quiz_type] = {'correct': 0, 'total': 0}
-        
-        self.session_stats['category_stats'][quiz_type]['total'] += 1
-        if is_correct:
-            self.session_stats['category_stats'][quiz_type]['correct'] += 1
-    
-    def process_answer(self, selected_answer, correct_answer, quiz_type):
-        """답안 처리 (개선된 시스템)"""
-        is_correct = selected_answer == correct_answer
-        
-        if is_correct:
-            # 정답 처리
-            self.retry_count = 0
-            self.silhouette_revealed = True  # 정답 시 실루엣 해제
-            return {
-                'result': 'correct',
-                'message': '🎉 정답입니다!',
-                'score': 100,
-                'show_next': True,
-                'show_answer': True
-            }
-        else:
-            # 오답 처리
-            self.retry_count += 1
-            
-            # 실루엣 퀴즈는 틀린 경우 즉시 실루엣 해제
-            if quiz_type == "silhouette_quiz":
-                self.silhouette_revealed = True
-            
-            if self.retry_count <= self.max_retries:
-                # 재시도 기회 남음
-                penalty = int(100 * self.retry_penalty * self.retry_count)
-                partial_score = int(100 * self.partial_score)
-                
-                return {
-                    'result': 'partial',
-                    'message': f'❌ 틀렸습니다. 재시도 기회: {self.max_retries - self.retry_count + 1}회 남음',
-                    'score': partial_score - penalty,
-                    'show_next': False,
-                    'retry_count': self.retry_count,
-                    'show_answer': quiz_type == "silhouette_quiz"  # 실루엣 퀴즈는 틀린 후 정답 공개
-                }
-            else:
-                # 모든 기회 소진
-                self.retry_count = 0
-                self.silhouette_revealed = True
-                
-                return {
-                    'result': 'incorrect',
-                    'message': f'💔 정답은 "{correct_answer}"입니다.',
-                    'score': 0,
-                    'show_next': True,
-                    'show_answer': True
-                }
-    
-    def get_combo_bonus(self):
-        """콤보 보너스 점수 계산"""
-        if self.combo_count >= 5:
-            return 50
-        elif self.combo_count >= 3:
-            return 20
-        elif self.combo_count >= 2:
-            return 10
-        return 0
-    
-    def save_session_stats(self):
-        """세션 통계 저장"""
-        stats_file = DATA_DIR / "quiz_stats.json"
-        stats_file.parent.mkdir(exist_ok=True)
-        
-        try:
-            # 기존 통계 로드
-            if stats_file.exists():
-                with open(stats_file, 'r', encoding='utf-8') as f:
-                    all_stats = json.load(f)
-            else:
-                all_stats = {'sessions': [], 'total_stats': {}}
-            
-            # 현재 세션 추가
-            session_data = {
-                'date': datetime.now().isoformat(),
-                'score': self.score,
-                'total_questions': self.total_questions,
-                'max_combo': self.max_combo,
-                'hints_used': self.hints_used,
-                **self.session_stats
-            }
-            
-            all_stats['sessions'].append(session_data)
-            
-            # 전체 통계 업데이트
-            if 'total_stats' not in all_stats:
-                all_stats['total_stats'] = {}
-            
-            total = all_stats['total_stats']
-            total['total_games'] = total.get('total_games', 0) + 1
-            total['total_correct'] = total.get('total_correct', 0) + self.session_stats['correct_answers']
-            total['total_questions'] = total.get('total_questions', 0) + self.total_questions
-            total['best_combo'] = max(total.get('best_combo', 0), self.max_combo)
-            
-            # 파일 저장
-            with open(stats_file, 'w', encoding='utf-8') as f:
-                json.dump(all_stats, f, ensure_ascii=False, indent=2)
-                
-        except Exception as e:
-            st.error(f"통계 저장 실패: {e}")
+        return {
+            'is_correct': is_correct,
+            'score': total_score,
+            'time_taken': time_taken,
+            'combo': self.combo_count,
+            'show_answer': True
+        } 
 
 def main():
-    st.title("🎮 Another Eden 캐릭터 퀴즈쇼")
-    st.markdown("---")
-
+    """메인 앱 함수"""
+    st.title("🎮 Another Eden 퀴즈쇼")
+    
     # 데이터 로드
     df = load_character_data()
     
     # 세션 상태 초기화
-    if 'quiz_game' not in st.session_state:
-        st.session_state.quiz_game = QuizGame(df)
+    if 'game' not in st.session_state:
+        st.session_state.game = QuizGame(df)
+    
     if 'current_quiz' not in st.session_state:
         st.session_state.current_quiz = None
+    
     if 'quiz_answered' not in st.session_state:
         st.session_state.quiz_answered = False
+    
     if 'show_result' not in st.session_state:
         st.session_state.show_result = False
-    if 'last_quiz_type' not in st.session_state:
-        st.session_state.last_quiz_type = None
     
-    # 사이드바 - 게임 설정
-    st.sidebar.header("🎲 퀴즈 설정")
-    
-    quiz_type = st.sidebar.selectbox(
-        "퀴즈 유형 선택",
-        options=[
-            "guess_name", "guess_element", "guess_weapon", 
-            "guess_personality_fillblank", "guess_release_date_order", "silhouette_quiz"
-        ],
-        format_func=lambda x: {
-            "guess_name": "🏷️ 이름 맞추기 (3-4성 최대)",
-            "guess_element": "🔥 속성 맞추기 (3-4성 최대)",
-            "guess_weapon": "⚔️ 무기 맞추기 (3-4성 최대)",
-            "guess_personality_fillblank": "🎭 퍼스널리티 빈칸맞추기",
-            "guess_release_date_order": "📅 출시일 순서맞추기",
-            "silhouette_quiz": "👤 실루엣 퀴즈 (전체캐릭터)"
-        }[x]
-    )
-    
-    # 퀴즈 유형이 변경되었는지 확인
-    if st.session_state.last_quiz_type != quiz_type:
-        st.session_state.last_quiz_type = quiz_type
-        # 게임 상태 초기화
-        st.session_state.quiz_game.current_quiz_type = quiz_type
-        st.session_state.current_quiz = None
-        st.session_state.quiz_answered = False
-        st.session_state.show_result = False
-        st.session_state.quiz_game.retry_count = 0
-        st.session_state.quiz_game.silhouette_revealed = False
-        st.rerun()
-    
-    # 점수 및 통계 표시
-    game = st.session_state.quiz_game
-    
-    # 게임 설정
-    st.sidebar.subheader("⚙️ 게임 설정")
-    enable_timer = st.sidebar.checkbox("⏰ 타이머 사용", value=False)
-    if enable_timer:
-        time_limit = st.sidebar.slider("시간 제한 (초)", 10, 60, 30)
-        game.time_limit = time_limit
-    if game.total_questions > 0:
-        accuracy = (game.session_stats['correct_answers'] / (game.session_stats['correct_answers'] + game.session_stats['wrong_answers'])) * 100 if (game.session_stats['correct_answers'] + game.session_stats['wrong_answers']) > 0 else 0
-        combo_bonus = game.get_combo_bonus()
-        
-        st.sidebar.markdown(f"""
-        <div class="score-display">
-            📊 현재 점수: {game.score}<br>
-            정답률: {accuracy:.1f}%<br>
-            🔥 연속 정답: {game.combo_count}개<br>
-            💎 최대 콤보: {game.max_combo}개<br>
-            🔄 재시도 기회: {max(0, game.max_retries - game.retry_count)}회<br>
-            💡 힌트 사용: {game.hints_used}/2개<br>
-            📝 총 문제: {game.total_questions}개<br>
-            ✅ 정답: {game.session_stats['correct_answers']}개<br>
-            ❌ 오답: {game.session_stats['wrong_answers']}개
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # 진행률 표시
-        if game.total_questions > 0:
-            progress = game.total_questions / 20  # 20문제 기준
-            st.sidebar.progress(min(progress, 1.0))
-            st.sidebar.caption(f"진행률: {min(game.total_questions, 20)}/20 문제")
-    
-    # 새 문제 생성 버튼
-    if st.sidebar.button("🎯 새 문제 생성", use_container_width=True):
-        st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
-        st.session_state.quiz_answered = False
-        st.session_state.show_result = False
-        st.session_state.answer_correct = False
-        st.session_state.selected_answer = None
-        if enable_timer:
-            game.start_timer()
-        st.rerun()
-    
-    # 게임 종료 및 통계 저장 버튼
-    if st.sidebar.button("📊 게임 종료 & 통계 저장", use_container_width=True):
-        if game.total_questions > 0:
-            game.save_session_stats()
-            st.sidebar.success("통계가 저장되었습니다!")
-        st.session_state.quiz_game = QuizGame(df)
-        st.session_state.current_quiz = None
-        st.session_state.quiz_answered = False
-        st.session_state.show_result = False
-        st.rerun()
-    
-    # 틀린 문제 확인 버튼
-    if game.wrong_questions and st.sidebar.button("❌ 틀린 문제 확인", use_container_width=True):
-        st.session_state.show_wrong_questions = True
-        st.rerun()
-    
-    # 점수 초기화 버튼
-    if st.sidebar.button("🔄 점수 초기화", use_container_width=True):
-        st.session_state.quiz_game = QuizGame(df)
-        st.session_state.current_quiz = None
-        st.session_state.quiz_answered = False
-        st.session_state.show_result = False
+    if 'show_wrong_questions' not in st.session_state:
         st.session_state.show_wrong_questions = False
-        st.rerun()
     
-    # 퀴즈 표시
+    game = st.session_state.game
+    
+    # 사이드바 - 퀴즈 설정
+    with st.sidebar:
+        st.header("🎯 퀴즈 설정")
+        
+        # 퀴즈 유형 선택
+        quiz_types = {
+            "🏷️ 이름 맞추기": "guess_name",
+            "⭐ 희귀도 맞추기": "guess_rarity", 
+            "🔥 속성 맞추기": "guess_element",
+            "⚔️ 무기 맞추기": "guess_weapon",
+            "🎭 퍼스널리티 맞추기": "guess_personality",
+            "📅 출시일 맞추기": "guess_release_date",
+            "👤 실루엣 퀴즈": "silhouette_quiz"
+        }
+        
+        selected_quiz_type = st.selectbox(
+            "퀴즈 유형 선택",
+            list(quiz_types.keys()),
+            index=0
+        )
+        
+        quiz_type = quiz_types[selected_quiz_type]
+        
+        # 타이머 설정
+        enable_timer = st.checkbox("⏱️ 타이머 사용", value=True)
+        if enable_timer:
+            game.time_limit = st.slider("제한 시간 (초)", 10, 60, 30)
+        
+        # 새 문제 생성 버튼
+        if st.button("🔄 새 문제 생성", use_container_width=True):
+            st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
+            st.session_state.quiz_answered = False
+            st.session_state.show_result = False
+            game.silhouette_revealed = False
+            game.retry_count = 0
+            game.current_question_data = st.session_state.current_quiz
+            game.current_quiz_type = quiz_type
+            if enable_timer:
+                game.question_start_time = time.time()
+            st.rerun()
+        
+        # 통계 표시
+        st.markdown("---")
+        st.header("📊 통계")
+        
+        if game.total_questions > 0:
+            accuracy = (game.session_stats['correct_answers'] / game.total_questions) * 100
+            st.metric("정확도", f"{accuracy:.1f}%")
+            st.metric("총 점수", f"{game.score:.0f}")
+            st.metric("최대 콤보", f"{game.max_combo}")
+            st.metric("총 문제 수", game.total_questions)
+        
+        # 틀린 문제 보기 버튼
+        if game.wrong_questions:
+            if st.button("❌ 틀린 문제 보기", use_container_width=True):
+                st.session_state.show_wrong_questions = True
+                st.rerun()
+    
+    # 메인 콘텐츠
     if st.session_state.current_quiz:
         quiz = st.session_state.current_quiz
         
-        # 데이터 없음 처리
-        if quiz.get('correct_answer') == '데이터 없음':
-            st.error("📊 데이터가 부족합니다. 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성해주세요.")
-            st.info("💡 현재 3성 이하 캐릭터가 없거나 데이터가 비어있습니다.")
-            return
-        
-        # 타이머 표시
-        if enable_timer and not st.session_state.quiz_answered:
-            remaining_time = game.get_remaining_time()
-            if remaining_time > 0:
-                timer_color = "#FF6B6B" if remaining_time <= 10 else "#4ECDC4"
-                timer_class = "timer-warning" if remaining_time <= 10 else "timer-display"
-                progress_width = (remaining_time / game.time_limit) * 100
-                
-                st.markdown(f"""
-                <div style="text-align: center; margin: 1rem 0;">
-                    <div class="{timer_class}" style="background: {timer_color}; color: white; padding: 0.8rem 1.5rem; 
-                                border-radius: 25px; display: inline-block; font-weight: bold;
-                                box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; overflow: hidden;">
-                        <div style="position: absolute; top: 0; left: 0; height: 100%; width: {progress_width}%;
-                                    background: rgba(255,255,255,0.2); transition: width 0.1s linear;"></div>
-                        <span style="position: relative; z-index: 1;">
-                            ⏰ 남은 시간: {remaining_time:.1f}초
-                        </span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.error("⏰ 시간 초과! 다음 문제로 넘어갑니다.")
-                st.session_state.quiz_answered = True
-                st.session_state.show_result = True
-                st.session_state.answer_correct = False
-                game.total_questions += 1
-                game.update_stats(False, quiz.get('quiz_type', ''), game.time_limit)
-                st.rerun()
-        
-        st.markdown(f"""
-        <div class="quiz-container">
-            <div class="quiz-question">{quiz['question']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # 힌트 버튼들
-        if not st.session_state.quiz_answered and game.hints_used < 2:
-            hint_col1, hint_col2, hint_col3 = st.columns([1, 1, 2])
+        # 퀴즈 컨테이너
+        with st.container():
+            st.markdown(f"""
+            <div class="quiz-container">
+                <h2 class="quiz-question">{quiz['question']}</h2>
+            """, unsafe_allow_html=True)
             
-            with hint_col1:
-                if st.button("💡 50:50 힌트", disabled=game.hints_used >= 2):
-                    quiz['options'] = game.use_hint_fifty_fifty(quiz['options'], quiz['correct_answer'])
-                    st.rerun()
-            
-            with hint_col2:
-                if enable_timer and st.button("⏰ 시간 추가", disabled=game.hints_used >= 2):
-                    if game.add_time_bonus():
-                        st.success("15초가 추가되었습니다!")
+            # 이미지 표시
+            if quiz['hint_image']:
+                if quiz_type == "silhouette_quiz" and not game.silhouette_revealed:
+                    # 실루엣 모드
+                    st.markdown(f"""
+                    <img src="{quiz['hint_image']}" 
+                         class="silhouette-image" 
+                         style="max-width: 200px; height: auto; margin: 1rem auto; display: block;">
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("👁️ 실루엣 보기", use_container_width=True):
+                        game.silhouette_revealed = True
                         st.rerun()
-        
-        # 힌트 이미지 표시
-        if quiz['hint_image'] and quiz['hint_image'] != "data:image/gif;base64,R0lGODlhEAAQAIABAP///wAAACH5BAEKAAEALAAAAAAQABAAAAIijI+py+0Po5yUFQA7":
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if quiz_type == "silhouette_quiz":
-                    # 실루엣 효과 개선
-                    if game.silhouette_revealed:
-                        # 실루엣 해제 상태 - 원본 이미지 표시
-                        st.markdown(f"""
-                        <div style="text-align: center;">
-                            <div style="margin: 1rem 0;">
-                                <img src="{quiz['hint_image']}" 
-                                     style="width: 250px; height: 250px; object-fit: contain; border-radius: 15px; 
-                                            box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 3px solid #fff;
-                                            filter: brightness(1) contrast(1) saturate(1);
-                                            transition: all 0.8s ease-in-out;">
-                            </div>
-                            <p style="color: #4CAF50; font-size: 1rem; font-weight: bold; margin-top: 0.5rem;">
-                                🎉 실루엣이 해제되었습니다!
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        # 실루엣 상태 - 검은 실루엣 표시
-                        st.markdown(f"""
-                        <div style="text-align: center;">
-                            <div style="margin: 1rem 0;">
-                                <img src="{quiz['hint_image']}" 
-                                     style="width: 250px; height: 250px; object-fit: contain; border-radius: 15px; 
-                                            box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 3px solid #fff;
-                                            filter: brightness(0) contrast(2) drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
-                                            transition: all 0.8s ease-in-out;">
-                            </div>
-                            <p style="color: #666; font-size: 1rem; margin-top: 0.5rem;">
-                                👤 실루엣을 보고 캐릭터를 맞춰보세요!
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                else:
+                    # 일반 모드
+                    st.markdown(f"""
+                    <img src="{quiz['hint_image']}" 
+                         style="max-width: 200px; height: auto; margin: 1rem auto; display: block;">
+                    """, unsafe_allow_html=True)
+            
+            # 타이머 표시
+            if enable_timer and game.question_start_time:
+                elapsed = time.time() - game.question_start_time
+                remaining = max(0, game.time_limit - elapsed)
+                
+                if remaining <= 0:
+                    st.error("⏰ 시간 초과!")
+                    st.session_state.quiz_answered = True
+                    st.session_state.show_result = True
+                    result = game.process_answer("", quiz['correct_answer'], quiz_type)
+                    st.rerun()
                 else:
                     st.markdown(f"""
-                    <div style="text-align: center;">
-                        <img src="{quiz['hint_image']}" 
-                             style="width: 200px; height: 200px; object-fit: contain; border-radius: 10px;">
+                    <div class="timer-display">
+                        ⏱️ 남은 시간: {remaining:.1f}초
                     </div>
                     """, unsafe_allow_html=True)
-        
-        # 선택지 표시
-        if not st.session_state.quiz_answered:
-            st.markdown("### 답을 선택하세요:")
-            cols = st.columns(2)
             
-            for i, option in enumerate(quiz['options']):
-                col_idx = i % 2
-                with cols[col_idx]:
-                    if st.button(f"{chr(65+i)}. {option}", key=f"option_{i}", use_container_width=True):
-                        # 시간 계산
-                        time_taken = 0
-                        if enable_timer and game.question_start_time:
-                            time_taken = time.time() - game.question_start_time
-                        
+            # 답안 선택
+            if not st.session_state.quiz_answered:
+                st.markdown('<div class="quiz-options">', unsafe_allow_html=True)
+                
+                # 답안 섞기
+                options = quiz['options'].copy()
+                random.shuffle(options)
+                
+                cols = st.columns(2)
+                for i, option in enumerate(options):
+                    col = cols[i % 2]
+                    if col.button(option, key=f"option_{i}", use_container_width=True):
                         st.session_state.quiz_answered = True
-                        st.session_state.selected_answer = option
                         st.session_state.show_result = True
-                        
-                        # 점수 및 통계 업데이트
-                        game.total_questions += 1
-                        is_correct = option == quiz['correct_answer']
-                        
-                        if is_correct:
-                            # 기본 점수 + 콤보 보너스 + 시간 보너스
-                            base_score = 10
-                            combo_bonus = game.get_combo_bonus()
-                            time_bonus = max(0, int((game.time_limit - time_taken) / 2)) if enable_timer else 0
-                            total_points = base_score + combo_bonus + time_bonus
-                            game.score += total_points
-                            st.session_state.answer_correct = True
-                            st.session_state.points_earned = total_points
-                        else:
-                            st.session_state.answer_correct = False
-                            st.session_state.points_earned = 0
-                        
-                        # 통계 업데이트 (문제 데이터 포함)
-                        question_data = {
-                            'question': quiz.get('question', ''),
-                            'correct_answer': quiz.get('correct_answer', ''),
-                            'user_answer': option
-                        }
-                        game.update_stats(is_correct, quiz.get('quiz_type', ''), time_taken, question_data=question_data)
-                        
+                        result = game.process_answer(option, quiz['correct_answer'], quiz_type)
                         st.rerun()
-        
-        # 결과 표시 (개선된 시스템)
-        if st.session_state.show_result:
-            selected_answer = st.session_state.get('selected_answer', '')
-            result = game.process_answer(selected_answer, quiz['correct_answer'], quiz_type)
+                
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            # 결과에 따른 CSS 클래스 결정
-            result_class = result['result']
-            result_message = result['message']
+            # 결과 표시
+            if st.session_state.show_result:
+                if 'result' in locals():
+                    if result['is_correct']:
+                        st.success(f"✅ 정답입니다! +{result['score']:.1f}점")
+                        if result['combo'] > 1:
+                            st.info(f"🔥 콤보: {result['combo']}연속 정답!")
+                    else:
+                        st.error(f"❌ 틀렸습니다. 정답: {quiz['correct_answer']}")
+                    
+                    st.info(f"⏱️ 소요 시간: {result['time_taken']:.1f}초")
+                
+                # 다음 문제 버튼들
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if st.button("🔄 다음 문제", key="next_btn", use_container_width=True):
+                        game.retry_count = 0
+                        game.silhouette_revealed = False
+                        st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
+                        st.session_state.quiz_answered = False
+                        st.session_state.show_result = False
+                        game.current_question_data = st.session_state.current_quiz
+                        game.current_quiz_type = quiz_type
+                        if enable_timer:
+                            game.question_start_time = time.time()
+                        st.rerun()
+                
+                with col2:
+                    if st.button("🎯 자동 다음 문제", key="auto_next_btn", use_container_width=True):
+                        game.retry_count = 0
+                        game.silhouette_revealed = False
+                        st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
+                        st.session_state.quiz_answered = False
+                        st.session_state.show_result = False
+                        game.current_question_data = st.session_state.current_quiz
+                        game.current_quiz_type = quiz_type
+                        if enable_timer:
+                            game.question_start_time = time.time()
+                        st.rerun()
             
+            # 캐릭터 상세 정보 표시
+            char_info = quiz['character_info']
             st.markdown(f"""
-            <div class="quiz-result {result_class}">
-                {result_message}
+            <div class="character-hint">
+                <h4>📋 캐릭터 정보</h4>
+                <ul>
+                    <li><strong>이름:</strong> {char_info.get('캐릭터명', 'N/A')}</li>
+                    <li><strong>희귀도:</strong> {char_info.get('희귀도', 'N/A')}</li>
+                    <li><strong>속성:</strong> {char_info.get('속성명리스트', 'N/A')}</li>
+                    <li><strong>무기:</strong> {char_info.get('무기명리스트', 'N/A')}</li>
+                    <li><strong>퍼스널리티:</strong> {char_info.get('퍼스널리티리스트', 'N/A')}</li>
+                    <li><strong>출시일:</strong> {char_info.get('출시일', 'N/A')}</li>
+                </ul>
             </div>
             """, unsafe_allow_html=True)
             
-            # 재시도 기회가 남아있고 정답이 아닌 경우
-            if result['result'] == 'partial':
-                st.markdown("### 🔄 다음 단계 선택")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("🔄 다시 시도", key="retry_btn", use_container_width=True, help="같은 문제를 다시 풀어보세요"):
-                        game.retry_count = 0
-                        st.session_state.quiz_answered = False
-                        st.session_state.show_result = False
-                        st.rerun()
-                
-                with col2:
-                    if st.button("⏭️ 다음 문제", key="next_btn", use_container_width=True, help="다음 문제로 넘어갑니다"):
-                        # 게임 상태 초기화
-                        game.retry_count = 0
-                        game.silhouette_revealed = False
-                        # 세션 상태 초기화
-                        st.session_state.current_quiz = None
-                        st.session_state.quiz_answered = False
-                        st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
-                        st.rerun()
-            
-            # 정답이거나 모든 기회를 소진한 경우
-            elif result['show_next']:
-                st.markdown("### ⏭️ 다음 문제로 넘어가기")
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    if st.button("⏭️ 다음 문제", key="next_question_btn", use_container_width=True, help="다음 문제로 넘어갑니다"):
-                        # 게임 상태 초기화
-                        game.retry_count = 0
-                        game.silhouette_revealed = False
-                        # 세션 상태 초기화
-                        st.session_state.current_quiz = None
-                        st.session_state.quiz_answered = False
-                        st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
-                        st.rerun()
-                
-                with col2:
-                    if st.button("🎯 자동 다음 문제", key="auto_next_btn", use_container_width=True, help="자동으로 다음 문제를 생성합니다"):
-                        # 게임 상태 초기화
-                        game.retry_count = 0
-                        game.silhouette_revealed = False
-                        # 세션 상태 초기화
-                        st.session_state.quiz_answered = False
-                        st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
-                        # 자동으로 새 문제 생성
-                        st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
-                        if enable_timer:
-                            game.start_timer()
-                        st.rerun()
-            
-<<<<<<< HEAD
-            # 캐릭터 상세 정보 표시 (정답이거나 모든 기회를 소진했을 때만)
-            if result.get('show_answer', False):
-                char_info = quiz['character_info']
-                st.markdown(f"""
-                <div class="character-hint">
-                    <h4>📋 캐릭터 정보</h4>
-                    <ul>
-                        <li><strong>이름:</strong> {char_info.get('캐릭터명', 'N/A')}</li>
-                        <li><strong>희귀도:</strong> {char_info.get('희귀도', 'N/A')}</li>
-                        <li><strong>속성:</strong> {char_info.get('속성명리스트', 'N/A')}</li>
-                        <li><strong>무기:</strong> {char_info.get('무기명리스트', 'N/A')}</li>
-                        <li><strong>퍼스널리티:</strong> {char_info.get('퍼스널리티리스트', 'N/A')}</li>
-                        <li><strong>출시일:</strong> {char_info.get('출시일', 'N/A')}</li>
-                    </ul>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
     
     # 틀린 문제 표시
     if st.session_state.get('show_wrong_questions', False) and game.wrong_questions:
@@ -1394,4 +798,4 @@ def main():
     """)
 
 if __name__ == "__main__":
-    main()
+    main() 

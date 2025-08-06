@@ -195,31 +195,80 @@ def safe_icon_to_data_uri(path: str) -> str:
 @st.cache_data
 def load_character_data():
     """캐릭터 데이터를 로드하고 캐싱합니다."""
-    csv_path = CSV_DIR / "eden_quiz_data.csv"
+    # 다양한 경로 시도
+    possible_paths = [
+        CSV_DIR / "eden_quiz_data.csv",
+        CSV_DIR / "eden_roulette_data.csv", 
+        CSV_DIR / "character_personalities.csv",
+        PROJECT_ROOT / "04_data" / "csv" / "eden_quiz_data.csv",
+        PROJECT_ROOT / "04_data" / "csv" / "eden_roulette_data.csv",
+        Path("04_data/csv/eden_quiz_data.csv"),
+        Path("04_data/csv/eden_roulette_data.csv"),
+        Path("csv/eden_quiz_data.csv"),
+        Path("csv/eden_roulette_data.csv"),
+        Path("eden_quiz_data.csv"),
+        Path("eden_roulette_data.csv"),
+        Path("character_personalities.csv")
+    ]
     
-    if not csv_path.exists():
-        st.error(f"📋 퀴즈 데이터를 불러올 수 없습니다. '{csv_path}' 파일을 확인해주세요.")
-        st.info("💡 프로젝트의 `data/csv` 폴더에 `eden_quiz_data.csv` 파일이 있는지 확인하세요.")
-        return None
-
+    # Streamlit Cloud 환경 감지
+    is_cloud = os.environ.get('STREAMLIT_SHARING', False) or '/app' in str(Path.cwd())
+    
+    if is_cloud:
+        cloud_paths = [
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/04_data/csv/eden_roulette_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_roulette_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_roulette_data.csv")
+        ]
+        possible_paths.extend(cloud_paths)
+    
+    # 파일 찾기
+    csv_path = None
+    for path in possible_paths:
+        if path.exists():
+            csv_path = path
+            break
+    
+    if not csv_path:
+        st.error("📋 데이터 파일을 찾을 수 없습니다.")
+        st.info("💡 다음 중 하나의 파일이 필요합니다:")
+        st.info("- eden_quiz_data.csv")
+        st.info("- eden_roulette_data.csv") 
+        st.info("- character_personalities.csv")
+        st.info("📡 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
+        st.stop()
+    
     try:
-        df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
-    except Exception as e:
-        st.error(f"❌ 데이터 파일 읽기 실패: {e}")
-        st.info("💡 파일 인코딩이 UTF-8이 맞는지 확인해주세요.")
-        return None
-
-    required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트', '캐릭터아이콘경로']
-    if not all(col in df.columns for col in required_columns):
-        st.error(f"❌ 데이터 파일에 필수 컬럼이 부족합니다. ({', '.join(required_columns)} 필요)")
-        return None
-
-    # 출시일 컬럼이 없으면 빈 값으로 추가
-    if '출시일' not in df.columns:
-        df['출시일'] = ''
+        # CSV 파일 로드
+        df = pd.read_csv(csv_path, encoding='utf-8').fillna('')
         
-    st.success(f"✅ 캐릭터 데이터 로드 완료: {len(df)}명")
-    return df
+        # 필수 컬럼 확인
+        required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            st.error(f"❌ 필수 컬럼이 누락되었습니다: {missing_columns}")
+            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+            st.stop()
+        
+        # 출시일 컬럼이 없는 경우 대비
+        if '출시일' not in df.columns:
+            df['출시일'] = ''
+        
+        # 퍼스널리티 컬럼이 없는 경우 대비
+        if '퍼스널리티리스트' not in df.columns:
+            df['퍼스널리티리스트'] = ''
+        
+        st.success(f"✅ 캐릭터 데이터 로드 완료: {len(df)}명의 캐릭터")
+        return df
+        
+    except Exception as e:
+        st.error(f"❌ 데이터 로딩 중 오류 발생: {str(e)}")
+        st.info("💡 파일 형식을 확인하거나 스크래퍼를 다시 실행하세요.")
+        st.stop()
 
 class QuizGame:
     def __init__(self, df: pd.DataFrame):
