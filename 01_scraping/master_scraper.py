@@ -234,6 +234,12 @@ class MasterScraper:
             if not icon_url.startswith('http'):
                 icon_url = urljoin(BASE_URL, icon_url)
             
+            # alt_text 안전 처리
+            if alt_text is None:
+                alt_text = "unknown"
+            elif not isinstance(alt_text, str):
+                alt_text = str(alt_text)
+            
             # 파일명 생성
             parsed_url = urlparse(icon_url)
             query_params = parse_qs(parsed_url.query)
@@ -267,6 +273,11 @@ class MasterScraper:
             
             # 아이콘 파일명 생성 (중복 방지)
             base_name = alt_text.replace(' ', '_').lower()
+            # 특수문자 제거 및 안전한 파일명 생성
+            base_name = re.sub(r'[^\w\-_]', '', base_name)
+            if not base_name:
+                base_name = "unknown"
+            
             icon_filename = f"{base_name}{ext}"
             icon_filename = self.sanitize_filename(icon_filename)
             
@@ -539,8 +550,46 @@ class MasterScraper:
                     
                     # 속성 찾기
                     elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
-                        if any(element in value_text.lower() for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
-                            data['elements'] = value_text
+                        # 속성 아이콘에서 추출
+                        img_tags = value_cell.find_all('img')
+                        element_names = []
+                        
+                        for img in img_tags:
+                            src = img.get('src', '')
+                            alt = img.get('alt', '').lower()
+                            
+                            # 속성 아이콘인지 확인
+                            if src and any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
+                                icon_path = self.download_icon(src, alt, "elements_equipment")
+                                if icon_path:
+                                    element_icons.append(icon_path)
+                                    element_names.append(alt)
+                        
+                        # 텍스트에서 속성 추출 (백업 방식)
+                        if not element_names and value_text:
+                            # 속성 패턴 찾기
+                            element_patterns = [
+                                r'\b(Fire|Water|Earth|Wind|Light|Dark|Crystal)\b',
+                                r'\b(화|수|지|풍|광|암|크리스탈)\b'
+                            ]
+                            
+                            found_elements = []
+                            for pattern in element_patterns:
+                                matches = re.findall(pattern, value_text, re.IGNORECASE)
+                                found_elements.extend(matches)
+                            
+                            if found_elements:
+                                data['elements'] = ', '.join(found_elements)
+                            elif len(value_text.strip()) < 100:
+                                # 짧은 텍스트는 속성명으로 간주
+                                data['elements'] = value_text.strip()
+                            else:
+                                data['elements'] = 'N/A'
+                        elif element_names:
+                            # 아이콘에서 추출한 속성명 사용
+                            data['elements'] = ', '.join(element_names)
+                        else:
+                            data['elements'] = 'N/A'
                     
                     # 무기 찾기 (개선된 방식)
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
@@ -567,13 +616,35 @@ class MasterScraper:
                                 "and can become outdated",
                                 "true manifestweapon of another class can be useful if current class is without manifest",
                                 "manifestweapon",
-                                "weapon of another class"
+                                "weapon of another class",
+                                "farmable",
+                                "expand",
+                                "rate:",
+                                "▽",
+                                "▽(expand)▽"
                             ]
                             
-                            is_invalid = any(invalid_text.lower() in value_text.lower() for invalid_text in invalid_texts)
+                            # 텍스트 정리
+                            cleaned_text = value_text
+                            for invalid_text in invalid_texts:
+                                cleaned_text = cleaned_text.replace(invalid_text, '')
                             
-                            if not is_invalid and len(value_text.strip()) < 100:
-                                data['weapons'] = value_text
+                            # 무기명 패턴 찾기
+                            weapon_patterns = [
+                                r'\b(Sword|Katana|Axe|Hammer|Spear|Bow|Staff|Fist|Lance|Obtain)\b',
+                                r'\b(검|도|도끼|망치|창|활|지팡이|주먹|랜스|획득)\b'
+                            ]
+                            
+                            found_weapons = []
+                            for pattern in weapon_patterns:
+                                matches = re.findall(pattern, cleaned_text, re.IGNORECASE)
+                                found_weapons.extend(matches)
+                            
+                            if found_weapons:
+                                data['weapons'] = ', '.join(found_weapons)
+                            elif len(cleaned_text.strip()) < 50 and cleaned_text.strip():
+                                # 짧은 텍스트는 무기명으로 간주
+                                data['weapons'] = cleaned_text.strip()
                             else:
                                 data['weapons'] = 'Obtain'
                                 print(f"    ⚠️ {eng_name}: 잘못된 무기명 감지, 기본값 'Obtain'으로 설정")
