@@ -551,33 +551,29 @@ class MasterScraper:
             # 다양한 테이블에서 데이터 찾기
             tables = soup.find_all('table')
             
-            # 레거시 방식: 위치 기반 파싱 추가
+            # 위치 기반 파싱 (레거시 방식) - 복원
             for table in tables:
                 rows = table.find_all('tr')
                 for row in rows:
                     cells = row.find_all(['th', 'td'])
                     
-                    # 위치 기반 파싱 (레거시 방식)
+                    # 위치 기반 파싱 (레거시 방식): 3번째 셀에서 모든 이미지 가져오기
                     if len(cells) >= 3:
-                        # 3번째 셀에서 모든 이미지 가져오기 (레거시 방식)
                         element_equipment_cell = cells[2] if len(cells) > 2 else None
                         if element_equipment_cell:
                             ee_icon_tags = element_equipment_cell.find_all('img')
                             for img_tag in ee_icon_tags:
                                 src = img_tag.get('src', '')
-                                alt = img_tag.get('alt', '').lower()
+                                alt = img_tag.get('alt', '')
                                 
                                 if src:
-                                    # 속성 아이콘인지 확인
-                                    if any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
-                                        icon_path = self.download_icon(src, alt, "elements_equipment")
-                                        if icon_path and icon_path not in element_icons:
+                                    # 레거시 방식: 모든 아이콘 다운로드 (필터링 없음)
+                                    icon_path = self.download_icon(src, alt, "elements_equipment")
+                                    if icon_path:
+                                        # 실제 다운로드된 아이콘 경로를 속성/무기 구분 없이 모두 저장
+                                        if icon_path not in element_icons:
                                             element_icons.append(icon_path)
-                                    
-                                    # 무기 아이콘인지 확인
-                                    elif any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana', 'obtain']):
-                                        icon_path = self.download_icon(src, alt, "elements_equipment")
-                                        if icon_path and icon_path not in weapon_icons:
+                                        if icon_path not in weapon_icons:
                                             weapon_icons.append(icon_path)
             
             # 헤더 기반 파싱 (기존 방식)
@@ -900,28 +896,8 @@ class MasterScraper:
             weapon_icons = char.get('weapon_icons', [])
             armor_icons = []
             
-            # 스크래핑된 아이콘이 없으면 기본 경로 생성
-            if not element_icons and char.get('elements'):
-                elements = char.get('elements').split(',')
-                for element in elements:
-                    element = element.strip()
-                    if element:
-                        icon_path = f"04_data/images/character_art/elements_equipment/{element.lower()}.png"
-                        element_icons.append(icon_path)
-            
-            if not weapon_icons and char.get('weapons'):
-                weapons = char.get('weapons').split(',')
-                for weapon in weapons:
-                    weapon = weapon.strip()
-                    if weapon and weapon.lower() != 'obtain':
-                        # 무기명 정규화
-                        weapon_normalized = weapon.lower().replace(' ', '_').replace('-', '_')
-                        icon_path = f"04_data/images/character_art/elements_equipment/{weapon_normalized}.png"
-                        weapon_icons.append(icon_path)
-                    elif weapon.lower() == 'obtain':
-                        # Obtain 무기는 기본 아이콘 사용
-                        icon_path = f"04_data/images/character_art/elements_equipment/obtain.png"
-                        weapon_icons.append(icon_path)
+            # 레거시 방식: 실제 다운로드된 아이콘만 사용 (가상 경로 생성 제거)
+            # 가상 경로 생성하지 않음 - 실제 다운로드된 파일만 CSV에 포함
             
             roulette_data.append({
                 '캐릭터명': char.get('korean_name', ''),
@@ -929,11 +905,11 @@ class MasterScraper:
                 '캐릭터아이콘경로': char.get('image_path', ''),
                 '희귀도': char.get('rarity', '5★'),
                 '속성명리스트': char.get('elements', ''),
-                '속성_아이콘경로리스트': '|'.join(element_icons),
+                '속성_아이콘경로리스트': '|'.join(element_icons) if element_icons else '',
                 '무기명리스트': char.get('weapons', 'Obtain'),
-                '무기_아이콘경로리스트': '|'.join(weapon_icons),
+                '무기_아이콘경로리스트': '|'.join(weapon_icons) if weapon_icons else '',
                 '방어구명리스트': '',  # 현재 스크래퍼에서 방어구 정보 없음
-                '방어구_아이콘경로리스트': '|'.join(armor_icons),
+                '방어구_아이콘경로리스트': '|'.join(armor_icons) if armor_icons else '',
                 '퍼스널리티리스트': ', '.join(korean_personalities),
                 '출시일': char.get('release_date', '')
             })
