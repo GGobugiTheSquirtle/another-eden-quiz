@@ -45,6 +45,30 @@ ELEMENT_MAPPING = {
     "Luring_Shadow_Icon.png": "그림자",
 }
 
+# ALT 텍스트 기반 매핑 추가
+ALT_TEXT_MAPPING = {
+    # ALT 텍스트 → 분류 및 한글명
+    "Luring Shadow Icon.png": ("element", "그림자"),
+    "Guiding Light Icon.png": ("element", "빛"),
+    "Skill Type 8 0.png": ("element", "무속성"),
+    "Skill Type 8 1.png": ("element", "불"),
+    "Skill Type 8 2.png": ("element", "땅"),
+    "Skill Type 8 4.png": ("element", "물"),
+    "Skill Type 8 8.png": ("element", "바람"),
+    "Skill Type 8 16.png": ("element", "번개"),
+    "Skill Type 8 32.png": ("element", "그림자"),
+    "Skill Type 8 64.png": ("element", "수정"),
+    # 무기 ALT 텍스트들 (예시 - 실제 웹에서 확인 후 업데이트)
+    "202000000 icon.png": ("weapon", "지팡이"),
+    "202000001 icon.png": ("weapon", "검"),
+    "202000002 icon.png": ("weapon", "도"),
+    "202000003 icon.png": ("weapon", "도끼"),
+    "202000004 icon.png": ("weapon", "창"),
+    "202000005 icon.png": ("weapon", "활"),
+    "202000006 icon.png": ("weapon", "주먹"),
+    "202000007 icon.png": ("weapon", "망치"),
+}
+
 WEAPON_MAPPING = {
     # 무기 아이콘 매핑 (실제 파일명 → 한글 무기명)
     "202000000_icon.png": "지팡이",
@@ -596,6 +620,7 @@ class MasterScraper:
             
             # 위치 기반 파싱 (레거시 방식) - 완전 복원
             element_icons = []
+            element_alts = []  # ALT 텍스트도 저장
             weapon_icons = []
             
             # 메인 캐릭터 정보 테이블 찾기 (anotherTable, wikitable, infobox)
@@ -627,10 +652,11 @@ class MasterScraper:
                                     # 레거시 방식: 조건 없이 모든 아이콘 다운로드
                                     icon_path = self.download_icon(src, alt, "elements_equipment")
                                     if icon_path:
-                                        # 중복 방지
+                                        # 중복 방지 (레거시 방식: 경로와 ALT를 함께 저장)
                                         if icon_path not in element_icons:
                                             element_icons.append(icon_path)
-                                            print(f"          ✅ 아이콘 추가: {os.path.basename(icon_path)}")
+                                            element_alts.append(alt)  # ALT 텍스트도 함께 저장
+                                            print(f"          ✅ 아이콘 추가: {os.path.basename(icon_path)} (ALT: {alt})")
                                         else:
                                             print(f"          🔄 중복 아이콘 스킵: {os.path.basename(icon_path)}")
             
@@ -647,37 +673,47 @@ class MasterScraper:
             
             print(f"    🔍 {len(element_icons)}개 다운로드된 아이콘 분류 중...")
             
-            for icon_path in element_icons:
+            for i, (icon_path, alt_text) in enumerate(zip(element_icons, element_alts)):
                 filename = os.path.basename(icon_path)
-                print(f"      🔍 분류 중: {filename}")
+                print(f"      🔍 분류 중: {filename} (ALT: {alt_text})")
                 
-                # 속성 아이콘 확인
-                if filename in ELEMENT_MAPPING:
+                # 1순위: ALT 텍스트 기반 분류 (레거시 방식)
+                if alt_text in ALT_TEXT_MAPPING:
+                    category, name = ALT_TEXT_MAPPING[alt_text]
+                    if category == "element":
+                        classified_elements.append(name)
+                        classified_element_icons.append(icon_path)
+                        print(f"        ✅ 속성 (ALT): {name}")
+                    elif category == "weapon":
+                        classified_weapons.append(name)
+                        classified_weapon_icons.append(icon_path)
+                        print(f"        ⚔️ 무기 (ALT): {name}")
+                
+                # 2순위: 파일명 기반 분류 (ALT가 매핑에 없는 경우)
+                elif filename in ELEMENT_MAPPING:
                     element_name = ELEMENT_MAPPING[filename]
                     classified_elements.append(element_name)
                     classified_element_icons.append(icon_path)
-                    print(f"        ✅ 속성: {element_name}")
+                    print(f"        ✅ 속성 (파일명): {element_name}")
                 
-                # 무기 아이콘 확인
                 elif filename in WEAPON_MAPPING:
                     weapon_name = WEAPON_MAPPING[filename]
                     classified_weapons.append(weapon_name)
                     classified_weapon_icons.append(icon_path)
-                    print(f"        ⚔️ 무기: {weapon_name}")
+                    print(f"        ⚔️ 무기 (파일명): {weapon_name}")
                 
-                # 방어구 아이콘 확인
                 elif filename in ARMOR_MAPPING:
                     armor_name = ARMOR_MAPPING[filename]
                     classified_armors.append(armor_name)
                     classified_armor_icons.append(icon_path)
-                    print(f"        🛡️ 방어구: {armor_name}")
+                    print(f"        🛡️ 방어구 (파일명): {armor_name}")
                     
                 else:
-                    print(f"        ❓ 미분류: {filename}")
+                    print(f"        ❓ 미분류: {filename} (ALT: {alt_text})")
                     # 미분류 아이콘은 컨텍스트에 따라 추가 처리
-                    if any(keyword in filename.lower() for keyword in ['light', 'shadow', 'dark']):
+                    if any(keyword in alt_text.lower() for keyword in ['light', 'shadow', 'dark']):
                         # Light/Shadow 관련은 속성으로 분류
-                        element_name = filename.replace('_Icon.png', '').replace('_', ' ')
+                        element_name = alt_text.replace(' Icon.png', '').replace('_', ' ')
                         classified_elements.append(element_name)
                         classified_element_icons.append(icon_path)
                         print(f"        ✅ 속성(추론): {element_name}")
