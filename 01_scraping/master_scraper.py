@@ -479,6 +479,36 @@ class MasterScraper:
             # 다양한 테이블에서 데이터 찾기
             tables = soup.find_all('table')
             
+            # 레거시 방식: 위치 기반 파싱 추가
+            for table in tables:
+                rows = table.find_all('tr')
+                for row in rows:
+                    cells = row.find_all(['th', 'td'])
+                    
+                    # 위치 기반 파싱 (레거시 방식)
+                    if len(cells) >= 3:
+                        # 3번째 셀에서 모든 이미지 가져오기 (레거시 방식)
+                        element_equipment_cell = cells[2] if len(cells) > 2 else None
+                        if element_equipment_cell:
+                            ee_icon_tags = element_equipment_cell.find_all('img')
+                            for img_tag in ee_icon_tags:
+                                src = img_tag.get('src', '')
+                                alt = img_tag.get('alt', '').lower()
+                                
+                                if src:
+                                    # 속성 아이콘인지 확인
+                                    if any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
+                                        icon_path = self.download_icon(src, alt, "elements_equipment")
+                                        if icon_path and icon_path not in element_icons:
+                                            element_icons.append(icon_path)
+                                    
+                                    # 무기 아이콘인지 확인
+                                    elif any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana', 'obtain']):
+                                        icon_path = self.download_icon(src, alt, "elements_equipment")
+                                        if icon_path and icon_path not in weapon_icons:
+                                            weapon_icons.append(icon_path)
+            
+            # 헤더 기반 파싱 (기존 방식)
             for table in tables:
                 rows = table.find_all('tr')
                 
@@ -511,21 +541,26 @@ class MasterScraper:
                     elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
                         if any(element in value_text.lower() for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
                             data['elements'] = value_text
-                            
-                            # 속성 아이콘 찾기
-                            img_tags = value_cell.find_all('img')
-                            for img in img_tags:
-                                src = img.get('src', '')
-                                alt = img.get('alt', '').lower()
-                                if src and any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
-                                    icon_path = self.download_icon(src, alt, "elements_equipment")
-                                    if icon_path:
-                                        element_icons.append(icon_path)
                     
-                    # 무기 찾기
+                    # 무기 찾기 (개선된 방식)
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
-                        # 무기 정보가 있으면 저장 (기본 무기 포함)
-                        if value_text and value_text.lower() != 'n/a':
+                        # 레거시 방식: 모든 이미지를 가져와서 처리
+                        img_tags = value_cell.find_all('img')
+                        weapon_names = []
+                        
+                        for img in img_tags:
+                            src = img.get('src', '')
+                            alt = img.get('alt', '').lower()
+                            
+                            # 무기 아이콘인지 확인
+                            if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana', 'obtain']):
+                                icon_path = self.download_icon(src, alt, "elements_equipment")
+                                if icon_path:
+                                    weapon_icons.append(icon_path)
+                                    weapon_names.append(alt)
+                        
+                        # 텍스트에서 무기명 추출 (백업 방식)
+                        if not weapon_names and value_text:
                             # 잘못된 텍스트 필터링
                             invalid_texts = [
                                 "are not always best to use in every situation",
@@ -535,25 +570,18 @@ class MasterScraper:
                                 "weapon of another class"
                             ]
                             
-                            # 잘못된 텍스트가 포함되어 있는지 확인
                             is_invalid = any(invalid_text.lower() in value_text.lower() for invalid_text in invalid_texts)
                             
-                            if not is_invalid and len(value_text.strip()) < 100:  # 길이 제한 추가
+                            if not is_invalid and len(value_text.strip()) < 100:
                                 data['weapons'] = value_text
-                                
-                                # 무기 아이콘 찾기
-                                img_tags = value_cell.find_all('img')
-                                for img in img_tags:
-                                    src = img.get('src', '')
-                                    alt = img.get('alt', '').lower()
-                                    if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana']):
-                                        icon_path = self.download_icon(src, alt, "elements_equipment")
-                                        if icon_path:
-                                            weapon_icons.append(icon_path)
                             else:
-                                # 잘못된 텍스트인 경우 기본값 설정
                                 data['weapons'] = 'Obtain'
                                 print(f"    ⚠️ {eng_name}: 잘못된 무기명 감지, 기본값 'Obtain'으로 설정")
+                        elif weapon_names:
+                            # 아이콘에서 추출한 무기명 사용
+                            data['weapons'] = ', '.join(weapon_names)
+                        else:
+                            data['weapons'] = 'Obtain'
             
             # 고화질 이미지 추출
             img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
