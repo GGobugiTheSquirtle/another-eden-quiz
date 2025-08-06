@@ -426,14 +426,24 @@ def load_character_data():
     if not csv_path.exists():
         st.error(f"❌ CSV 파일을 찾을 수 없습니다: {csv_path}")
         
-        # 대체 경로 시도
+        # 대체 경로 시도 (Cloud Streamlit 환경 대응)
         alternative_paths = [
             project_root / "04_data" / "csv" / "eden_roulette_data.csv",
             project_root / "04_data" / "csv" / "character_personalities.csv",
             Path("04_data/csv/eden_quiz_data.csv"),
             Path("04_data/csv/eden_roulette_data.csv"),
             Path("csv/eden_quiz_data.csv"),
-            Path("csv/eden_roulette_data.csv")
+            Path("csv/eden_roulette_data.csv"),
+            Path("eden_quiz_data.csv"),
+            Path("eden_roulette_data.csv"),
+            Path("character_personalities.csv"),
+            # Cloud Streamlit 환경을 위한 추가 경로
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/04_data/csv/eden_roulette_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_roulette_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_roulette_data.csv")
         ]
         
         st.info("🔍 대체 경로에서 파일을 찾는 중...")
@@ -451,6 +461,12 @@ def load_character_data():
             st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
             st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
             st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
+            
+            # Cloud Streamlit 환경에서 파일 업로드 안내
+            st.markdown("### 📤 Cloud 환경에서 파일 업로드")
+            st.info("Cloud Streamlit 환경에서는 CSV 파일을 직접 업로드해야 할 수 있습니다.")
+            st.info("메인 런쳐의 '📊 데이터 관리' 페이지에서 파일을 업로드하세요.")
+            
             st.stop()
     
     # 파일 읽기 시도 (여러 인코딩)

@@ -222,93 +222,101 @@ def show_data_management():
             try:
                 # 파일 저장
                 file_path = csv_dir / uploaded_file.name
-                with open(file_path, 'wb') as f:
-                    f.write(uploaded_file.getvalue())
+                with open(file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
                 
-                # 파일 검증
-                df = pd.read_csv(file_path, encoding='utf-8-sig')
-                st.success(f"✅ {uploaded_file.name} 업로드 완료 ({len(df)}행)")
+                st.success(f"✅ {uploaded_file.name} 업로드 완료")
                 uploaded_count += 1
                 
+                # 파일 내용 미리보기
+                try:
+                    df = pd.read_csv(file_path, encoding='utf-8-sig')
+                    st.info(f"📊 {uploaded_file.name}: {len(df)}행, {len(df.columns)}컬럼")
+                except:
+                    st.warning(f"⚠️ {uploaded_file.name}: 파일 읽기 실패 (인코딩 문제일 수 있음)")
+                    
             except Exception as e:
                 st.error(f"❌ {uploaded_file.name} 업로드 실패: {str(e)}")
         
         if uploaded_count > 0:
             st.success(f"🎉 총 {uploaded_count}개 파일 업로드 완료!")
-            st.rerun()
+            st.info("💡 이제 퀴즈나 룰렛 앱을 실행해보세요.")
     
-    st.markdown("---")
+    # 파일 존재 여부 확인
+    st.markdown("### 📁 현재 파일 상태")
+    csv_files = [
+        "eden_quiz_data.csv",
+        "eden_roulette_data.csv", 
+        "character_personalities.csv"
+    ]
     
-    # 기존 데이터 관리 기능들
-    st.markdown("### 📡 데이터 스크래퍼")
+    for filename in csv_files:
+        file_path = csv_dir / filename
+        if file_path.exists():
+            try:
+                df = pd.read_csv(file_path, encoding='utf-8-sig')
+                st.success(f"✅ {filename}: {len(df)}행")
+            except:
+                st.warning(f"⚠️ {filename}: 파일 존재하지만 읽기 실패")
+        else:
+            st.error(f"❌ {filename}: 파일 없음")
+    
+    # 스크래퍼 실행 섹션
+    st.markdown("### 📡 데이터 스크래퍼 실행")
+    st.info("💡 **로컬 환경에서만 실행하세요.** Cloud 환경에서는 파일 업로드를 사용하세요.")
+    
+    if st.button("🚀 스크래퍼 실행", type="primary"):
+        try:
+            # 스크래퍼 실행
+            scraper_path = PROJECT_ROOT / "01_scraping" / "master_scraper.py"
+            if scraper_path.exists():
+                st.info("📡 스크래퍼를 실행하는 중...")
+                
+                # Python 스크립트 실행
+                import subprocess
+                result = subprocess.run([
+                    sys.executable, str(scraper_path)
+                ], capture_output=True, text=True, cwd=PROJECT_ROOT)
+                
+                if result.returncode == 0:
+                    st.success("✅ 스크래퍼 실행 완료!")
+                    st.info("📊 새로 생성된 데이터를 확인하세요.")
+                else:
+                    st.error(f"❌ 스크래퍼 실행 실패: {result.stderr}")
+            else:
+                st.error("❌ 스크래퍼 파일을 찾을 수 없습니다.")
+        except Exception as e:
+            st.error(f"❌ 스크래퍼 실행 중 오류: {str(e)}")
+    
+    # 데이터 백업/복원
+    st.markdown("### 💾 데이터 백업/복원")
+    st.info("💡 **중요한 데이터는 백업해두세요.**")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("📡 스크래퍼 실행", use_container_width=True, type="primary"):
-            if run_scraper():
-                st.rerun()
-    
-    with col2:
-        if st.button("🔄 데이터 새로고침", use_container_width=True):
-            st.cache_data.clear()
-            st.rerun()
-    
-    # 데이터 상태 확인
-    st.markdown("### 📈 데이터 현황")
-    data_status = check_data_status()
-    
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("CSV 파일", data_status["CSV 파일"])
-    with col2:
-        st.metric("캐릭터 이미지", data_status["캐릭터 이미지"])
-    with col3:
-        st.metric("백업 이미지", data_status["백업 이미지"])
-    with col4:
-        st.metric("정리된 이미지", data_status["정리된 이미지"])
-    
-    # 이미지 정리 기능
-    st.markdown("### 🖼️ 이미지 정리")
-    if st.button("🔄 이미지 정리 실행", use_container_width=True):
-        try:
-            from apps.shared.image_organizer import ImageOrganizer
-            organizer = ImageOrganizer()
-            organizer.create_organized_folders()
-            
-            render_status_message("이미지 정리가 완료되었습니다!", "success")
-            time.sleep(1)
-            st.rerun()
-        except Exception as e:
-            render_status_message(f"이미지 정리 중 오류: {e}", "error")
-    
-    # 파일 상태 상세 정보
-    st.markdown("### 📁 파일 상태 상세")
-    
-    data_dir = PROJECT_ROOT / "04_data"
-    csv_dir = data_dir / "csv"
-    
-    if csv_dir.exists():
-        csv_files = []
-        for csv_file in csv_dir.glob("*.csv"):
+        if st.button("📦 데이터 백업"):
             try:
-                df = pd.read_csv(csv_file, encoding='utf-8-sig')
-                csv_files.append({
-                    "파일명": csv_file.name,
-                    "행 수": len(df),
-                    "컬럼 수": len(df.columns),
-                    "크기": f"{csv_file.stat().st_size / 1024:.1f} KB"
-                })
-            except Exception:
-                csv_files.append({
-                    "파일명": csv_file.name,
-                    "행 수": "읽기 오류",
-                    "컬럼 수": "읽기 오류", 
-                    "크기": f"{csv_file.stat().st_size / 1024:.1f} KB"
-                })
-        
-        if csv_files:
-            st.dataframe(pd.DataFrame(csv_files), use_container_width=True)
+                import shutil
+                from datetime import datetime
+                
+                backup_dir = PROJECT_ROOT / "backup" / datetime.now().strftime("%Y%m%d_%H%M%S")
+                backup_dir.mkdir(parents=True, exist_ok=True)
+                
+                # CSV 파일들 백업
+                for filename in csv_files:
+                    src = csv_dir / filename
+                    if src.exists():
+                        dst = backup_dir / filename
+                        shutil.copy2(src, dst)
+                
+                st.success(f"✅ 백업 완료: {backup_dir}")
+            except Exception as e:
+                st.error(f"❌ 백업 실패: {str(e)}")
+    
+    with col2:
+        if st.button("🔄 데이터 복원"):
+            st.info("�� 백업 기능은 개발 중입니다.")
 
 def show_app_launcher():
     """앱 실행 페이지"""

@@ -438,15 +438,24 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
     if not Path(csv_path).exists():
         st.error(f"❌ 메인 CSV 파일을 찾을 수 없습니다: {csv_path}")
         
-        # 대체 경로 시도
+        # 대체 경로 시도 (Cloud Streamlit 환경 대응)
         alternative_paths = [
-            project_root / "04_data" / "csv" / "eden_roulette_data.csv",
             project_root / "04_data" / "csv" / "eden_quiz_data.csv",
             project_root / "04_data" / "csv" / "character_personalities.csv",
             Path("04_data/csv/eden_roulette_data.csv"),
             Path("04_data/csv/eden_quiz_data.csv"),
             Path("csv/eden_roulette_data.csv"),
-            Path("csv/eden_quiz_data.csv")
+            Path("csv/eden_quiz_data.csv"),
+            Path("eden_roulette_data.csv"),
+            Path("eden_quiz_data.csv"),
+            Path("character_personalities.csv"),
+            # Cloud Streamlit 환경을 위한 추가 경로
+            Path("/app/04_data/csv/eden_roulette_data.csv"),
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_roulette_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_roulette_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv")
         ]
         
         st.info("🔍 대체 경로에서 파일을 찾는 중...")
@@ -464,67 +473,48 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
             st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
             st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
             st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
-            return None, *(None,)*7
-        
-    if not Path(personalities_csv_path).exists():
-        st.warning(f"⚠️ 퍼스널리티 데이터가 없습니다: {personalities_csv_path}")
-        st.info("퍼스널리티 기능 없이 진행됩니다.")
-
+            
+            # Cloud Streamlit 환경에서 파일 업로드 안내
+            st.markdown("### 📤 Cloud 환경에서 파일 업로드")
+            st.info("Cloud Streamlit 환경에서는 CSV 파일을 직접 업로드해야 할 수 있습니다.")
+            st.info("메인 런쳐의 '📊 데이터 관리' 페이지에서 파일을 업로드하세요.")
+            
+            st.stop()
+    
+    # 파일 읽기 시도 (여러 인코딩)
     try:
-        # 메인 데이터 로드 (다양한 인코딩 지원)
+        df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+        st.success(f"✅ UTF-8 인코딩으로 메인 파일 로드 성공")
+    except UnicodeDecodeError:
         try:
-            df_main = pd.read_csv(csv_path, encoding='utf-8-sig')
-            st.success(f"✅ UTF-8 인코딩으로 메인 파일 로드 성공")
-        except UnicodeDecodeError:
-            df_main = pd.read_csv(csv_path, encoding='cp949')
-            st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다.")
-        
-        # 퍼스널리티 데이터 로드 (선택적)
-        df_pers = None
-        if Path(personalities_csv_path).exists():
-            try:
-                df_pers = pd.read_csv(personalities_csv_path, encoding='utf-8-sig')
-                st.success(f"✅ UTF-8 인코딩으로 퍼스널리티 파일 로드 성공")
-            except UnicodeDecodeError:
-                df_pers = pd.read_csv(personalities_csv_path, encoding='cp949')
-                st.warning("⚠️ 퍼스널리티 파일 인코딩을 cp949로 읽었습니다.")
-        
-        log_debug(f"[CSVLoad] {len(df_main)} records from main" + 
-                 (f", {len(df_pers)} from personalities." if df_pers is not None else " (no personalities)."))
-
-        # 데이터 병합
-        if df_pers is not None:
-            df = pd.merge(df_main, df_pers[['Korean_Name', 'Personalities_List']],
-                          left_on='캐릭터명', right_on='Korean_Name', how='left')
-            
-            # 병합 후 중복 컬럼 제거
-            df.drop(columns=['Korean_Name'], inplace=True)
-            
-            # 'Personalities_List' 컬럼의 NaN 값을 빈 문자열로 대체
-            df['Personalities_List'] = df['Personalities_List'].fillna('')
-            column_map_config['personalities'] = 'Personalities_List' # 맵에 추가
-        else:
-            df = df_main.copy()
-
+            df = pd.read_csv(csv_path, encoding='cp949').fillna('')
+            st.warning("⚠️ 메인 파일 인코딩을 cp949로 읽었습니다. UTF-8로 재저장을 권장합니다.")
+        except Exception as e:
+            st.error(f"❌ 메인 파일 읽기 실패: {str(e)}")
+            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            st.stop()
     except Exception as e:
-        st.error(f"데이터 파일을 로드하고 병합하는 중 오류 발생: {e}")
-        return None, *(None,)*7
-
-    # 컬럼 존재 유효성 검사
-    for internal_key, csv_col_name in column_map_config.items():
-        if csv_col_name not in df.columns:
-            log_debug(f"[경고] '{csv_col_name}' 컬럼이 없어 무시됩니다.")
-            df[csv_col_name] = None
-
-    # 반환할 컬럼명 추출
-    name_col = column_map_config.get('이름')
-    char_icon_col = column_map_config.get('캐릭터아이콘경로')
-    rarity_col = column_map_config.get('희귀도')
-    attribute_col = column_map_config.get('속성명') # main에서 사용하는 키는 '속성명'
-    weapon_col = column_map_config.get('무기명') # main에서 사용하는 키는 '무기명'
-    personality_col = column_map_config.get('성격특성')
-
-    return df, name_col, char_icon_col, rarity_col, attribute_col, weapon_col, personality_col
+        st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
+        st.stop()
+    
+    # 데이터 검증
+    if len(df) == 0:
+        st.error("📋 메인 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        st.stop()
+    
+    # 필수 컬럼 확인
+    required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        st.error(f"📊 필수 컬럼이 누락되었습니다: {missing_columns}")
+        st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+        st.stop()
+    
+    # 성공 메시지
+    st.success(f"✅ 메인 데이터 로드 완료: {len(df)}명의 캐릭터")
+    
+    return df, column_map_config['name'], column_map_config['char_icon'], column_map_config['rarity'], column_map_config['attribute'], column_map_config['weapon'], column_map_config['personality']
 
 def create_character_card_html(row: pd.Series, column_map: dict, is_winner: bool = False) -> str:
     """
