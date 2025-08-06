@@ -20,9 +20,9 @@ from datetime import datetime
 # 이렇게 하면 로컬 환경과 배포 환경 모두에서 일관되게 동작합니다.
 APP_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = APP_DIR # app.py가 프로젝트 루트에 있다고 가정
-DATA_DIR = PROJECT_ROOT / "data"
+DATA_DIR = PROJECT_ROOT / "04_data"
 CSV_DIR = DATA_DIR / "csv"
-IMAGE_DIR = DATA_DIR / "images"
+IMAGE_DIR = DATA_DIR / "images" / "character_art"
 
 # 페이지 설정
 st.set_page_config(
