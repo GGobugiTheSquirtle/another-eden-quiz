@@ -413,18 +413,67 @@ def safe_icon_to_data_uri(path: str) -> str:
 @st.cache_data
 def load_character_data():
     """캐릭터 데이터 로드 (출시일 지원)"""
-    csv_path = CSV_DIR / "eden_quiz_data.csv"  # 스크래퍼가 생성하는 파일명으로 수정
+    csv_path = CSV_DIR / "eden_quiz_data.csv"
+    
+    # 파일 존재 확인
     if not csv_path.exists():
-        st.error(f"eden_quiz_data.csv 파일이 없습니다. 먼저 데이터 생성 스크립트를 실행해주세요.\n경로: {csv_path}")
-        st.info("📡 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
+        st.error(f"📁 퀴즈 데이터를 불러올 수 없습니다. CSV 파일을 확인하세요.")
+        st.error(f"파일 경로: {csv_path}")
+        
+        # 대체 파일들 확인
+        alternative_files = [
+            CSV_DIR / "eden_roulette_data.csv",
+            CSV_DIR / "character_personalities.csv", 
+            CSV_DIR / "Matching_names.csv"
+        ]
+        
+        st.info("🔍 사용 가능한 CSV 파일 확인 중...")
+        available_files = [f.name for f in alternative_files if f.exists()]
+        
+        if available_files:
+            st.info(f"📄 다음 파일들을 발견했습니다: {', '.join(available_files)}")
+            st.info("💡 **해결 방법**: 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 quiz 데이터를 생성하세요.")
+        else:
+            st.warning("⚠️ 데이터 파일이 전혀 없습니다. 스크래퍼를 먼저 실행해주세요.")
+        
         st.stop()
     
-    df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+    # 파일 읽기 시도 (여러 인코딩)
+    try:
+        df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+    except UnicodeDecodeError:
+        try:
+            df = pd.read_csv(csv_path, encoding='cp949').fillna('')
+            st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다. UTF-8로 재저장을 권장합니다.")
+        except Exception as e:
+            st.error(f"❌ 파일 읽기 실패: {str(e)}")
+            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            st.stop()
+    except Exception as e:
+        st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
+        st.stop()
+    
+    # 데이터 검증
+    if len(df) == 0:
+        st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        st.stop()
+    
+    # 필수 컬럼 확인
+    required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        st.error(f"📊 필수 컬럼이 누락되었습니다: {missing_columns}")
+        st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+        st.stop()
     
     # 출시일 컬럼이 없는 경우 대비
     if '출시일' not in df.columns:
         df['출시일'] = ''
         st.info("ℹ️ 출시일 데이터가 없습니다. 스크래퍼를 다시 실행하면 출시일 정보를 추가할 수 있습니다.")
+    
+    # 성공 메시지
+    st.success(f"✅ 캐릭터 데이터 로드 완료: {len(df)}명의 캐릭터")
     
     return df
 

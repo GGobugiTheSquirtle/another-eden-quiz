@@ -418,14 +418,33 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
     """
     기본 데이터와 성격 데이터를 로드하고 병합하여 준비합니다.
     """
-    if not Path(csv_path).exists() or not Path(personalities_csv_path).exists():
-        st.error(f"데이터 파일을 찾을 수 없습니다: {csv_path} 또는 {personalities_csv_path}")
+    if not Path(csv_path).exists():
+        st.error(f"📁 룰렛 데이터를 불러올 수 없습니다: {csv_path}")
+        st.info("💡 **해결 방법**: 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
         return None, *(None,)*7
+        
+    if not Path(personalities_csv_path).exists():
+        st.warning(f"⚠️ 퍼스널리티 데이터가 없습니다: {personalities_csv_path}")
+        st.info("퍼스널리티 기능 없이 진행됩니다.")
 
     try:
-        df_main = pd.read_csv(csv_path, encoding='utf-8-sig')
-        df_pers = pd.read_csv(personalities_csv_path, encoding='utf-8-sig')
-        log_debug(f"[CSVLoad] {len(df_main)} records from main, {len(df_pers)} from personalities.")
+        # 메인 데이터 로드 (다양한 인코딩 지원)
+        try:
+            df_main = pd.read_csv(csv_path, encoding='utf-8-sig')
+        except UnicodeDecodeError:
+            df_main = pd.read_csv(csv_path, encoding='cp949')
+            st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다.")
+        
+        # 퍼스널리티 데이터 로드 (선택적)
+        df_pers = None
+        if Path(personalities_csv_path).exists():
+            try:
+                df_pers = pd.read_csv(personalities_csv_path, encoding='utf-8-sig')
+            except UnicodeDecodeError:
+                df_pers = pd.read_csv(personalities_csv_path, encoding='cp949')
+        
+        log_debug(f"[CSVLoad] {len(df_main)} records from main" + 
+                 (f", {len(df_pers)} from personalities." if df_pers is not None else " (no personalities)."))
 
         # 데이터 병합
         df = pd.merge(df_main, df_pers[['Korean_Name', 'Personalities_List']],
