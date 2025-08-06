@@ -1052,7 +1052,20 @@ class MasterScraper:
 
     def organize_scraped_images(self, characters):
         """스크래핑된 이미지 자동 정리 (레거시 기능 복원)"""
-        from .image_organizer import ImageOrganizer
+        try:
+            import sys
+            import os
+            
+            # 현재 스크립트 디렉토리를 sys.path에 추가
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            if current_dir not in sys.path:
+                sys.path.insert(0, current_dir)
+            
+            from image_organizer import ImageOrganizer
+        except ImportError as e:
+            print(f"❌ ImageOrganizer 임포트 실패: {e}")
+            print("⚠️ 이미지 자동 정리를 건너뛰겠습니다.")
+            return
         
         print("🗂️ 이미지 자동 정리 시작...")
         try:
