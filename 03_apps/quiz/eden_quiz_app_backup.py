@@ -433,58 +433,164 @@ def safe_icon_to_data_uri(path: str) -> str:
 @st.cache_data
 def load_character_data():
 <<<<<<< HEAD
-    """캐릭터 데이터 로드 (통합 버전)"""
-    # 통합 데이터 파일 우선 시도
+    """캐릭터 데이터 로드"""
+    # 통합 데이터 파일 우선 시도, 없으면 기존 파일 시도
     csv_path = CSV_DIR / "eden_unified_data.csv"
     if not csv_path.exists():
         csv_path = CSV_DIR / "eden_quiz_data.csv"
-    
     if not csv_path.exists():
-        st.error("📋 퀴즈 데이터 파일이 없습니다.")
-        st.info("💡 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
-        st.stop()
+        st.error(f"데이터 파일이 없습니다. 먼저 스크래퍼를 실행해주세요.\n경로: {csv_path}")
+        st.info("📡 메인 런쳐에서 '데이터 스크래퍼 실행'을 클릭하여 데이터를 생성하세요.")
+=======
+    """캐릭터 데이터 로드 (캐싱 적용)"""
+    # 프로젝트 루트 경로 설정
+    project_root = Path(__file__).parent.parent.parent
+    csv_path = project_root / "04_data" / "csv" / "eden_quiz_data.csv"
     
-    # 파일 읽기 (여러 인코딩 시도)
+    # Streamlit Cloud 환경 감지
+    is_cloud = os.environ.get('STREAMLIT_SHARING', False) or '/app' in str(Path.cwd())
+    
+    # 개발자 모드 감지 (URL 파라미터로 제어)
+    query_params = st.experimental_get_query_params()
+    debug_mode = query_params.get('debug', [False])[0] == 'true'
+    
+    # 경로 검증 및 디버깅 정보 (개발자 모드에서만 표시)
+    if debug_mode:
+        st.info(f"🔍 데이터 파일 경로: {csv_path}")
+        st.info(f"📁 프로젝트 루트: {project_root}")
+        st.info(f"☁️ Cloud 환경: {'예' if is_cloud else '아니오'}")
+        st.info(f"💻 현재 작업 디렉토리: {Path.cwd()}")
+        st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
+    
+    # Cloud 환경이면 우선적으로 Cloud 경로 시도
+    if is_cloud:
+        cloud_paths = [
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/home/appuser/venv/lib/python3.9/site-packages/04_data/csv/eden_quiz_data.csv"),
+        ]
+        for cloud_path in cloud_paths:
+            if cloud_path.exists():
+                csv_path = cloud_path
+                if debug_mode:
+                    st.success(f"☁️ Cloud 환경에서 파일 발견: {csv_path}")
+                break
+    
+    # 파일 존재 여부 확인
+    if not csv_path.exists():
+        if not debug_mode:
+            st.error("📋 퀴즈 데이터를 불러올 수 없습니다.")
+            st.info("💡 잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의하세요.")
+            st.stop()
+        
+        st.error(f"❌ CSV 파일을 찾을 수 없습니다: {csv_path}")
+        
+        # 대체 경로 시도 (Cloud Streamlit 환경 대응)
+        alternative_paths = [
+            project_root / "04_data" / "csv" / "eden_roulette_data.csv",
+            project_root / "04_data" / "csv" / "character_personalities.csv",
+            Path("04_data/csv/eden_quiz_data.csv"),
+            Path("04_data/csv/eden_roulette_data.csv"),
+            Path("csv/eden_quiz_data.csv"),
+            Path("csv/eden_roulette_data.csv"),
+            Path("eden_quiz_data.csv"),
+            Path("eden_roulette_data.csv"),
+            Path("character_personalities.csv"),
+            # Cloud Streamlit 환경을 위한 추가 경로
+            Path("/app/04_data/csv/eden_quiz_data.csv"),
+            Path("/app/04_data/csv/eden_roulette_data.csv"),
+            Path("/app/csv/eden_quiz_data.csv"),
+            Path("/app/csv/eden_roulette_data.csv"),
+            Path("/tmp/04_data/csv/eden_quiz_data.csv"),
+            Path("/tmp/04_data/csv/eden_roulette_data.csv")
+        ]
+        
+        st.info("🔍 대체 경로에서 파일을 찾는 중...")
+        available_files = []
+        for alt_path in alternative_paths:
+            if alt_path.exists():
+                available_files.append(str(alt_path))
+                st.success(f"✅ 발견된 파일: {alt_path}")
+                csv_path = alt_path
+                break
+        
+        if not available_files:
+            st.error("❌ 어떤 CSV 파일도 찾을 수 없습니다.")
+            if debug_mode:
+                st.info("💡 **해결 방법**:")
+                st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
+                st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
+                st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
+                
+                # Cloud Streamlit 환경에서 파일 업로드 안내
+                st.markdown("### 📤 Cloud 환경에서 파일 업로드")
+                st.info("Cloud Streamlit 환경에서는 CSV 파일을 직접 업로드해야 할 수 있습니다.")
+                st.info("메인 런쳐의 '📊 데이터 관리' 페이지에서 파일을 업로드하세요.")
+            
+            st.stop()
+    
+    # 파일 읽기 시도 (여러 인코딩)
     try:
         df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
+        if debug_mode:
+            st.success(f"✅ UTF-8 인코딩으로 파일 로드 성공")
     except UnicodeDecodeError:
         try:
             df = pd.read_csv(csv_path, encoding='cp949').fillna('')
+            if debug_mode:
+                st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다. UTF-8로 재저장을 권장합니다.")
         except Exception as e:
-            st.error(f"❌ 파일 읽기 실패: {str(e)}")
-            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            if debug_mode:
+                st.error(f"❌ 파일 읽기 실패: {str(e)}")
+                st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            else:
+                st.error("📋 데이터 파일을 읽을 수 없습니다.")
+                st.info("💡 잠시 후 다시 시도해주세요.")
             st.stop()
     except Exception as e:
-        st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
-        st.stop()
+        if debug_mode:
+            st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
+        else:
+            st.error("📋 데이터를 불러오는 중 오류가 발생했습니다.")
+            st.info("💡 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.")
+>>>>>>> 51a6804ef3bd3f3fa2c256192c03c12cd0142417
         st.stop()
     
     # 데이터 검증
     if len(df) == 0:
-        st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        if debug_mode:
+            st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        else:
+            st.error("📋 데이터가 없습니다.")
+            st.info("💡 잠시 후 다시 시도해주세요.")
         st.stop()
     
-    # 필수 컬럼 확인 (유연하게)
-    if '캐릭터명' not in df.columns:
-        # 영문명만 있는 경우 캐릭터명으로 사용
-        if '영문명' in df.columns:
-            df['캐릭터명'] = df['영문명']
-        elif 'english_name' in df.columns:
-            df['캐릭터명'] = df['english_name']
+    # 필수 컬럼 확인
+    required_columns = ['캐릭터명', 'English_Name', '희귀도', '속성명리스트', '무기명리스트']
+    missing_columns = [col for col in required_columns if col not in df.columns]
     
-    # 기타 필요 컬럼 기본값 설정
-    if '희귀도' not in df.columns:
-        df['희귀도'] = ''
-    if '속성명리스트' not in df.columns:
-        df['속성명리스트'] = ''
-    if '무기명리스트' not in df.columns:
-        df['무기명리스트'] = ''
-    if '퍼스널리티리스트' not in df.columns and '성격특성리스트' in df.columns:
-        df['퍼스널리티리스트'] = df['성격특성리스트']
-    if '퍼스널리티리스트' not in df.columns:
-        df['퍼스널리티리스트'] = ''
+    if missing_columns:
+        if debug_mode:
+            st.error(f"❌ 필수 컬럼이 누락되었습니다: {missing_columns}")
+            st.error("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+        else:
+            st.error("📋 데이터 형식에 문제가 있습니다.")
+            st.info("💡 관리자에게 문의하세요.")
+        st.stop()
+    
+    # 데이터 로딩 성공
+    if debug_mode:
+        st.success(f"✅ 총 {len(df)}개의 캐릭터 데이터를 성공적으로 로드했습니다!")
+        st.info(f"📊 컬럼: {list(df.columns)}")
+    
+    # 출시일 컬럼이 없는 경우 대비
     if '출시일' not in df.columns:
         df['출시일'] = ''
+        st.info("ℹ️ 출시일 데이터가 없습니다. 스크래퍼를 다시 실행하면 출시일 정보를 추가할 수 있습니다.")
+    
+    # 성공 메시지
+    st.success(f"✅ 캐릭터 데이터 로드 완료: {len(df)}명의 캐릭터")
     
     return df
 
@@ -521,8 +627,12 @@ class QuizGame:
         self.question_history = []
         # 현재 퀴즈 유형 추적
         self.current_quiz_type = None
+
+    def get_random_characters(self, n: int = 4, max_rarity: int = 5) -> List[Dict]:
+=======
         
     def get_random_characters(self, n: int = 4, max_rarity: int = 5, use_all_characters: bool = False) -> List[Dict]:
+>>>>>>> 51a6804ef3bd3f3fa2c256192c03c12cd0142417
         """랜덤 캐릭터 n명 선택 (희귀도 제한 가능)"""
         filtered_df = self.df.copy()
         
@@ -886,26 +996,25 @@ class QuizGame:
         if is_correct:
             # 정답 처리
             self.retry_count = 0
-            self.silhouette_revealed = True  # 정답 시 실루엣 해제
+            self.silhouette_revealed = True
             return {
                 'result': 'correct',
                 'message': '🎉 정답입니다!',
                 'score': 100,
                 'show_next': True,
-                'show_answer': True
+                'show_answer': True  # 정답일 때만 답 공개
             }
         else:
             # 오답 처리
             self.retry_count += 1
             
-            # 실루엣 퀴즈는 틀린 경우 즉시 실루엣 해제
-            if quiz_type == "silhouette_quiz":
-                self.silhouette_revealed = True
-            
             if self.retry_count <= self.max_retries:
                 # 재시도 기회 남음
                 penalty = int(100 * self.retry_penalty * self.retry_count)
                 partial_score = int(100 * self.partial_score)
+                
+                if quiz_type == "silhouette_quiz":
+                    self.silhouette_revealed = True
                 
                 return {
                     'result': 'partial',
@@ -913,7 +1022,7 @@ class QuizGame:
                     'score': partial_score - penalty,
                     'show_next': False,
                     'retry_count': self.retry_count,
-                    'show_answer': quiz_type == "silhouette_quiz"  # 실루엣 퀴즈는 틀린 후 정답 공개
+                    'show_answer': False  # 재시도 기회가 남아있으면 답 공개하지 않음
                 }
             else:
                 # 모든 기회 소진
@@ -925,7 +1034,7 @@ class QuizGame:
                     'message': f'💔 정답은 "{correct_answer}"입니다.',
                     'score': 0,
                     'show_next': True,
-                    'show_answer': True
+                    'show_answer': True  # 모든 기회를 소진했을 때만 답 공개
                 }
     
     def get_combo_bonus(self):
@@ -1165,39 +1274,21 @@ def main():
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if quiz_type == "silhouette_quiz":
-                    # 실루엣 효과 개선
-                    if game.silhouette_revealed:
-                        # 실루엣 해제 상태 - 원본 이미지 표시
-                        st.markdown(f"""
-                        <div style="text-align: center;">
-                            <div style="margin: 1rem 0;">
-                                <img src="{quiz['hint_image']}" 
-                                     style="width: 250px; height: 250px; object-fit: contain; border-radius: 15px; 
-                                            box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 3px solid #fff;
-                                            filter: brightness(1) contrast(1) saturate(1);
-                                            transition: all 0.8s ease-in-out;">
-                            </div>
-                            <p style="color: #4CAF50; font-size: 1rem; font-weight: bold; margin-top: 0.5rem;">
-                                🎉 실루엣이 해제되었습니다!
-                            </p>
+                    # 실루엣 효과 (CSS 클래스 적용)
+                    silhouette_class = "silhouette-revealed" if game.silhouette_revealed else "silhouette-image"
+                    st.markdown(f"""
+                    <div style="text-align: center;">
+                        <div style="margin: 1rem 0;">
+                            <img src="{quiz['hint_image']}" 
+                                 class="{silhouette_class}"
+                                 style="width: 250px; height: 250px; object-fit: contain; border-radius: 15px; 
+                                        box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 3px solid #fff;">
                         </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        # 실루엣 상태 - 검은 실루엣 표시
-                        st.markdown(f"""
-                        <div style="text-align: center;">
-                            <div style="margin: 1rem 0;">
-                                <img src="{quiz['hint_image']}" 
-                                     style="width: 250px; height: 250px; object-fit: contain; border-radius: 15px; 
-                                            box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: 3px solid #fff;
-                                            filter: brightness(0) contrast(2) drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
-                                            transition: all 0.8s ease-in-out;">
-                            </div>
-                            <p style="color: #666; font-size: 1rem; margin-top: 0.5rem;">
-                                👤 실루엣을 보고 캐릭터를 맞춰보세요!
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        <p style="color: #666; font-size: 0.9rem; margin-top: 0.5rem;">
+                            {("🎉 실루엣이 해제되었습니다!" if game.silhouette_revealed else "👤 실루엣을 보고 캐릭터를 맞춰보세요!")}
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.markdown(f"""
                     <div style="text-align: center;">
@@ -1279,15 +1370,11 @@ def main():
                 
                 with col2:
                     if st.button("⏭️ 다음 문제", key="next_btn", use_container_width=True, help="다음 문제로 넘어갑니다"):
-                        # 게임 상태 초기화
                         game.retry_count = 0
                         game.silhouette_revealed = False
-                        # 세션 상태 초기화
                         st.session_state.current_quiz = None
                         st.session_state.quiz_answered = False
                         st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
                         st.rerun()
             
             # 정답이거나 모든 기회를 소진한 경우
@@ -1297,29 +1384,21 @@ def main():
                 
                 with col1:
                     if st.button("⏭️ 다음 문제", key="next_question_btn", use_container_width=True, help="다음 문제로 넘어갑니다"):
-                        # 게임 상태 초기화
                         game.retry_count = 0
                         game.silhouette_revealed = False
-                        # 세션 상태 초기화
                         st.session_state.current_quiz = None
                         st.session_state.quiz_answered = False
                         st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
                         st.rerun()
                 
                 with col2:
                     if st.button("🎯 자동 다음 문제", key="auto_next_btn", use_container_width=True, help="자동으로 다음 문제를 생성합니다"):
-                        # 게임 상태 초기화
                         game.retry_count = 0
                         game.silhouette_revealed = False
-                        # 세션 상태 초기화
-                        st.session_state.quiz_answered = False
-                        st.session_state.show_result = False
-                        st.session_state.selected_answer = None
-                        st.session_state.answer_correct = False
                         # 자동으로 새 문제 생성
                         st.session_state.current_quiz = game.generate_quiz_question(quiz_type)
+                        st.session_state.quiz_answered = False
+                        st.session_state.show_result = False
                         if enable_timer:
                             game.start_timer()
                         st.rerun()
@@ -1336,11 +1415,26 @@ def main():
                         <li><strong>희귀도:</strong> {char_info.get('희귀도', 'N/A')}</li>
                         <li><strong>속성:</strong> {char_info.get('속성명리스트', 'N/A')}</li>
                         <li><strong>무기:</strong> {char_info.get('무기명리스트', 'N/A')}</li>
-                        <li><strong>퍼스널리티:</strong> {char_info.get('퍼스널리티리스트', 'N/A')}</li>
-                        <li><strong>출시일:</strong> {char_info.get('출시일', 'N/A')}</li>
                     </ul>
                 </div>
                 """, unsafe_allow_html=True)
+=======
+            # 캐릭터 상세 정보 표시
+            char_info = quiz['character_info']
+            st.markdown(f"""
+            <div class="character-hint">
+                <h4>📋 캐릭터 정보</h4>
+                <ul>
+                    <li><strong>이름:</strong> {char_info.get('캐릭터명', 'N/A')}</li>
+                    <li><strong>희귀도:</strong> {char_info.get('희귀도', 'N/A')}</li>
+                    <li><strong>속성:</strong> {char_info.get('속성명리스트', 'N/A')}</li>
+                    <li><strong>무기:</strong> {char_info.get('무기명리스트', 'N/A')}</li>
+                    <li><strong>퍼스널리티:</strong> {char_info.get('퍼스널리티리스트', 'N/A')}</li>
+                    <li><strong>출시일:</strong> {char_info.get('출시일', 'N/A')}</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+>>>>>>> 51a6804ef3bd3f3fa2c256192c03c12cd0142417
     
     # 틀린 문제 표시
     if st.session_state.get('show_wrong_questions', False) and game.wrong_questions:
