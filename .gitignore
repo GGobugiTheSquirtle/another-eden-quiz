@@ -1,3 +1,7 @@
+# Ignore problematic files
+05_archive/cleanup_duplicate_files/nul
+**/nul
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,9 +23,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# Virtual Environment
+# Virtual environments
 venv/
 env/
 ENV/
@@ -31,26 +34,15 @@ ENV/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Streamlit
-.streamlit/secrets.toml
-
-# Logs
-*.log
+# Claude
+.claude/
 
 # Temporary files
 *.tmp
 *.temp
-
-# Backup files
-*.bak
-*.backup
-
-# Data files - 배포용으로 포함
-# 04_data/csv/*.csv
-# 04_data/images/
+temp/
