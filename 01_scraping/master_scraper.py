@@ -69,6 +69,25 @@ ALT_TEXT_MAPPING = {
     "202000007 icon.png": ("weapon", "망치"),
 }
 
+# 무기 키워드 매핑 테이블 추가
+WEAPON_KEYWORDS = {
+    # 영문 → 한글 무기명
+    "Staff": "지팡이",
+    "Sword": "검", 
+    "Bow": "활",
+    "Axe": "도끼",
+    "Hammer": "망치",
+    "Fist": "주먹",
+    "Fists": "주먹",
+    "Lance": "창",
+    "Spear": "창",
+    "Katana": "도",
+    "Rod": "지팡이",
+    "Wand": "지팡이",
+    "Club": "망치",
+    "Mace": "망치",
+}
+
 WEAPON_MAPPING = {
     # 무기 아이콘 매핑 (실제 파일명 → 한글 무기명)
     "202000000_icon.png": "지팡이",
@@ -498,6 +517,26 @@ class MasterScraper:
             print(f"❌ 캐릭터 목록 스크래핑 실패: {e}")
             return []
     
+    def extract_weapons_from_personalities(self, korean_personalities, english_personalities):
+        """퍼스널리티 리스트에서 무기 정보 추출"""
+        weapons_found = []
+        
+        # 한글과 영문 퍼스널리티를 모두 확인
+        all_personalities = korean_personalities + english_personalities
+        
+        for personality in all_personalities:
+            if not personality:
+                continue
+                
+            # 무기 키워드 검색
+            for weapon_eng, weapon_kor in WEAPON_KEYWORDS.items():
+                if weapon_eng.lower() in personality.lower():
+                    if weapon_kor not in weapons_found:
+                        weapons_found.append(weapon_kor)
+                        print(f"        🗡️ 퍼스널리티에서 무기 발견: {personality} → {weapon_kor}")
+        
+        return weapons_found
+    
     def clean_scraped_data(self, data):
         """스크래핑된 데이터 정리 및 표준화 (완전 자동화)"""
         cleaned_data = {}
@@ -783,6 +822,38 @@ class MasterScraper:
             # 데이터 정리
             cleaned_data = self.clean_scraped_data(data)
             
+            # 퍼스널리티에서 무기 추출 (스크래핑 단계에서도 적용)
+            personality_match_names = [
+                eng_name,  # 원본 이름
+                eng_name.replace(' (Another Style)', ''),  # AS 제거
+                eng_name.replace(' (Alter)', ''),  # Alter 제거  
+                eng_name.replace(' AS', ''),  # AS 제거
+                eng_name.split(' (')[0],  # 괄호 앞부분만
+                eng_name.split(' ')[0] if ' ' in eng_name else eng_name,  # 첫 번째 단어만
+            ]
+            
+            personalities = []
+            for match_name in personality_match_names:
+                if match_name in self.character_personalities:
+                    personalities = self.character_personalities[match_name]
+                    print(f"    🎯 퍼스널리티 매칭: {eng_name} → {match_name}")
+                    break
+            
+            if personalities:
+                korean_personalities = []
+                for personality in personalities:
+                    korean_personality = self.personality_mapping.get(personality, personality)
+                    korean_personalities.append(korean_personality)
+                
+                # 무기 정보 추출
+                extracted_weapons = self.extract_weapons_from_personalities(korean_personalities, personalities)
+                if extracted_weapons:
+                    cleaned_data['weapons'] = ', '.join(extracted_weapons)
+                    print(f"    🗡️ 퍼스널리티에서 추출된 무기: {', '.join(extracted_weapons)}")
+            else:
+                print(f"    ❓ 퍼스널리티를 찾을 수 없음: {eng_name}")
+                print(f"    🔍 시도한 이름들: {personality_match_names}")
+            
             # 아이콘 정보 추가
             cleaned_data['element_icons'] = element_icons
             cleaned_data['weapon_icons'] = weapon_icons
@@ -850,6 +921,7 @@ class MasterScraper:
                             character_personalities[char_name].append(personality_kor)
             
             print(f"✅ 퍼스널리티 데이터 스크래핑 완료: {len(character_personalities)}명")
+            self.character_personalities = character_personalities  # 인스턴스 변수로 저장
             return character_personalities
             
         except Exception as e:
@@ -1122,12 +1194,15 @@ class MasterScraper:
                 korean_personality = self.personality_mapping.get(personality, personality)
                 korean_personalities.append(korean_personality)
 
+            # 무기 정보 추출
+            extracted_weapons = self.extract_weapons_from_personalities(korean_personalities, personalities)
+            
             processed_char = {
                 **char_data,
                 'korean_name': kor_name,
                 'rarity': details.get('rarity', ''),
                 'elements': details.get('elements', ''),
-                'weapons': details.get('weapons', ''),
+                'weapons': ', '.join(extracted_weapons), # 추출된 무기 정보 사용
                 'personalities': ', '.join(korean_personalities),
                 'high_res_image_url': details.get('high_res_image_url', ''),
                 'image_path': ''  # Initialize path
