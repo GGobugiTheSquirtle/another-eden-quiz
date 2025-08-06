@@ -21,6 +21,49 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as OpenpyxlImage
 import shutil
 
+# 레거시 방식 매핑 테이블 추가
+ELEMENT_MAPPING = {
+    # 속성 아이콘 매핑 (실제 파일명 → 한글 속성명)
+    "Skill_Type_8_0.png": "무속성",
+    "Skill_Type_8_1.png": "불",
+    "Skill_Type_8_2.png": "땅",
+    "Skill_Type_8_4.png": "물", 
+    "Skill_Type_8_8.png": "바람",
+    "Skill_Type_8_16.png": "번개",
+    "Skill_Type_8_32.png": "그림자",
+    "Skill_Type_8_64.png": "수정",
+    # 추가 패턴들
+    "St_attack_element_change1.png": "불",
+    "St_attack_element_change2.png": "땅", 
+    "St_attack_element_change4.png": "물",
+    "St_attack_element_change8.png": "바람",
+    "St_attack_element_change16.png": "번개",
+    "St_attack_element_change32.png": "그림자",
+    "St_attack_element_change64.png": "수정",
+    # Light/Shadow 아이콘들
+    "Guiding_Light_Icon.png": "빛",
+    "Luring_Shadow_Icon.png": "그림자",
+}
+
+WEAPON_MAPPING = {
+    # 무기 아이콘 매핑 (실제 파일명 → 한글 무기명)
+    "202000000_icon.png": "지팡이",
+    "202000001_icon.png": "검",
+    "202000002_icon.png": "도",
+    "202000003_icon.png": "도끼",
+    "202000004_icon.png": "창",
+    "202000005_icon.png": "활",
+    "202000006_icon.png": "주먹",
+    "202000007_icon.png": "망치",
+}
+
+ARMOR_MAPPING = {
+    # 방어구 아이콘 매핑
+    "216000002_icon.png": "팔찌",
+    "216000003_icon.png": "목걸이", 
+    "216000004_icon.png": "반지",
+}
+
 # 프로젝트 루트 설정
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 SCRAPING_DIR = PROJECT_ROOT / "01_scraping"
@@ -594,7 +637,65 @@ class MasterScraper:
             # 무기 아이콘은 element_icons에서 복사 (레거시 방식)
             weapon_icons = element_icons.copy()
             
-            # 헤더 기반 텍스트 파싱 (아이콘은 위에서 이미 처리됨)
+            # 레거시 방식: 다운로드된 아이콘을 매핑 테이블로 분류
+            classified_elements = []
+            classified_element_icons = []
+            classified_weapons = []
+            classified_weapon_icons = []
+            classified_armors = []
+            classified_armor_icons = []
+            
+            print(f"    🔍 {len(element_icons)}개 다운로드된 아이콘 분류 중...")
+            
+            for icon_path in element_icons:
+                filename = os.path.basename(icon_path)
+                print(f"      🔍 분류 중: {filename}")
+                
+                # 속성 아이콘 확인
+                if filename in ELEMENT_MAPPING:
+                    element_name = ELEMENT_MAPPING[filename]
+                    classified_elements.append(element_name)
+                    classified_element_icons.append(icon_path)
+                    print(f"        ✅ 속성: {element_name}")
+                
+                # 무기 아이콘 확인
+                elif filename in WEAPON_MAPPING:
+                    weapon_name = WEAPON_MAPPING[filename]
+                    classified_weapons.append(weapon_name)
+                    classified_weapon_icons.append(icon_path)
+                    print(f"        ⚔️ 무기: {weapon_name}")
+                
+                # 방어구 아이콘 확인
+                elif filename in ARMOR_MAPPING:
+                    armor_name = ARMOR_MAPPING[filename]
+                    classified_armors.append(armor_name)
+                    classified_armor_icons.append(icon_path)
+                    print(f"        🛡️ 방어구: {armor_name}")
+                    
+                else:
+                    print(f"        ❓ 미분류: {filename}")
+                    # 미분류 아이콘은 컨텍스트에 따라 추가 처리
+                    if any(keyword in filename.lower() for keyword in ['light', 'shadow', 'dark']):
+                        # Light/Shadow 관련은 속성으로 분류
+                        element_name = filename.replace('_Icon.png', '').replace('_', ' ')
+                        classified_elements.append(element_name)
+                        classified_element_icons.append(icon_path)
+                        print(f"        ✅ 속성(추론): {element_name}")
+            
+            # 분류 결과로 데이터 업데이트
+            element_icons = classified_element_icons
+            weapon_icons = classified_weapon_icons
+            
+            # 텍스트 정보도 분류된 결과로 업데이트
+            if classified_elements:
+                data['elements'] = ', '.join(classified_elements)
+            if classified_weapons:
+                data['weapons'] = ', '.join(classified_weapons)
+            else:
+                # 무기가 없으면 기본값
+                data['weapons'] = 'Obtain'
+            
+            # 헤더 기반 텍스트 파싱 (희귀도 등 추가 정보)
             for table in tables:
                 rows = table.find_all('tr')
                 
@@ -619,39 +720,6 @@ class MasterScraper:
                             data['rarity'] = value_text
                         elif 'SA' in value_text.upper() or 'Stellar Awakened' in value_text:
                             data['rarity'] = "5★ SA"
-                    
-                    # 속성 텍스트 추출 (아이콘은 이미 위에서 처리됨)
-                    elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
-                        if value_text and len(value_text.strip()) < 100:
-                            data['elements'] = value_text.strip()
-                    
-                    # 무기 텍스트 추출 (아이콘은 이미 위에서 처리됨)
-                    elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
-                        if value_text:
-                            # 잘못된 텍스트 필터링
-                            invalid_texts = [
-                                "are not always best to use in every situation",
-                                "and can become outdated",
-                                "true manifestweapon of another class can be useful if current class is without manifest",
-                                "manifestweapon",
-                                "weapon of another class",
-                                "farmable",
-                                "expand",
-                                "rate:",
-                                "▽",
-                                "▽(expand)▽"
-                            ]
-                            
-                            cleaned_text = value_text
-                            for invalid_text in invalid_texts:
-                                cleaned_text = cleaned_text.replace(invalid_text, '')
-                            
-                            if len(cleaned_text.strip()) < 50 and cleaned_text.strip():
-                                data['weapons'] = cleaned_text.strip()
-                            else:
-                                data['weapons'] = 'Obtain'
-                        else:
-                            data['weapons'] = 'Obtain'
             
             # 기본값 설정
             if 'rarity' not in data or not data['rarity']:
@@ -963,7 +1031,7 @@ class MasterScraper:
         # --- Phase 1: Scrape all data ---
         print("\n--- Phase 1: 모든 데이터 스크래핑 ---")
         all_details = []
-        print("📄 캐릭터 상세 정보 일괄 스크래핑 중...")
+        print("�� 캐릭터 상세 정보 일괄 스크래핑 중...")
         
         skipped_count = 0
         scraped_count = 0

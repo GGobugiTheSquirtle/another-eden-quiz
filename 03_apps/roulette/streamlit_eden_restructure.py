@@ -204,7 +204,9 @@ def safe_icon_to_data_uri(path: any) -> str:
         search_dirs = [
             IMAGE_DIR,  # 메인 이미지 디렉토리
             DATA_DIR / "images",  # 백업 검색 경로
+            DATA_DIR / "images" / "character_art" / "elements_equipment",  # 속성/무기 아이콘 디렉토리
             Path.cwd() / "04_data" / "images" / "character_art",  # 프로젝트 루트 기준
+            Path.cwd() / "04_data" / "images" / "character_art" / "elements_equipment",  # 속성/무기 아이콘
             Path(path).parent if Path(path).parent.exists() else Path.cwd()
         ]
         
