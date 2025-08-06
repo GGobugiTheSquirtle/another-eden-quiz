@@ -1,6 +1,6 @@
 """
-🎮 Another Eden 캐릭터 퀴즈쇼 앱
-기존 룰렛 시스템을 확장하여 다양한 퀴즈 게임 모드를 제공합니다.
+🎮 Another Eden 통합 앱 - 퀴즈 & 룰렛
+퀴즈와 룰렛을 모두 포함하는 통합 Streamlit 애플리케이션
 """
 
 import os
@@ -15,53 +15,30 @@ import unicodedata
 import json
 from datetime import datetime
 
-# --- 1. 경로 설정 단순화 ---
-# 스크립트 파일(app.py)이 있는 위치를 기준으로 경로를 설정합니다.
-# 이렇게 하면 로컬 환경과 배포 환경 모두에서 일관되게 동작합니다.
+# --- 경로 설정 ---
 APP_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = APP_DIR # app.py가 프로젝트 루트에 있다고 가정
-DATA_DIR = PROJECT_ROOT / "data"
+PROJECT_ROOT = APP_DIR
+DATA_DIR = PROJECT_ROOT / "04_data"
 CSV_DIR = DATA_DIR / "csv"
 IMAGE_DIR = DATA_DIR / "images"
 
 # 페이지 설정
 st.set_page_config(
-    page_title="🎮 Another Eden 퀴즈쇼", 
+    page_title="🎮 Another Eden 통합 앱", 
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS 스타일 (변경 없음) ---
-# 기존 CSS 코드는 훌륭해서 그대로 사용합니다.
+# --- CSS 스타일 ---
 st.markdown("""
 <style>
-    /* ... (기존 CSS 코드는 여기에 그대로 붙여넣기) ... */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
     
     .stApp {
         font-family: 'Noto Sans KR', sans-serif;
     }
     
-    /* 모바일 반응형 개선 */
-    @media (max-width: 768px) {
-        .quiz-container {
-            padding: 1rem !important;
-            margin: 0.5rem 0 !important;
-        }
-        .quiz-options {
-            grid-template-columns: 1fr !important;
-            gap: 1rem !important;
-        }
-        .quiz-question {
-            font-size: 1.4rem !important;
-        }
-        .quiz-option {
-            padding: 1rem !important;
-            font-size: 1rem !important;
-        }
-    }
-    
-    .quiz-container {
+    .main-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2.5rem;
         border-radius: 25px;
@@ -81,27 +58,63 @@ st.markdown("""
         to { opacity: 1; transform: translateY(0); }
     }
     
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
+    .quiz-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2.5rem;
+        border-radius: 25px;
+        margin: 1.5rem 0;
+        color: white;
+        text-align: center;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        animation: slideInDown 0.6s ease-out;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
     
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
+    .roulette-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        margin: 1rem 0;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        animation: fadeInUp 0.6s ease-out;
     }
     
-    .silhouette-image {
-        filter: brightness(0);
-        transition: filter 0.5s ease-in-out;
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     
-    .silhouette-revealed {
-        filter: brightness(1);
+    .filter-container {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 15px;
+        margin: 1rem 0;
+        backdrop-filter: blur(10px);
     }
-
+    
+    .roulette-button {
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        color: #000;
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+    
+    .roulette-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+    }
+    
     .quiz-result {
         padding: 1.5rem;
         border-radius: 15px;
@@ -148,23 +161,54 @@ st.markdown("""
         margin-top: 1rem;
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
+    
     .character-hint h4 {
         margin-top: 0;
         border-bottom: 2px solid #FFD700;
         padding-bottom: 0.5rem;
         display: inline-block;
     }
+    
     .character-hint ul {
         list-style: none;
         padding: 0;
     }
+    
     .character-hint li {
         margin-bottom: 0.5rem;
         font-size: 1rem;
     }
+    
+    .silhouette-image {
+        filter: brightness(0) contrast(0) saturate(0) !important;
+        transition: all 1.2s ease-in-out;
+        transform: scale(0.95);
+        animation: none !important;
+    }
+    
+    .silhouette-revealed {
+        filter: brightness(1) contrast(1) saturate(1) !important;
+        animation: silhouetteReveal 1.2s ease-in-out !important;
+        transform: scale(1) !important;
+        transition: all 1.2s ease-in-out !important;
+    }
+    
+    @keyframes silhouetteReveal {
+        0% {
+            filter: brightness(0) contrast(0) saturate(0);
+            transform: scale(0.95);
+        }
+        50% {
+            filter: brightness(0.3) contrast(0.3) saturate(0.3);
+            transform: scale(0.98);
+        }
+        100% {
+            filter: brightness(1) contrast(1) saturate(1);
+            transform: scale(1);
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
-
 
 def safe_icon_to_data_uri(path: str) -> str:
     """아이콘 경로를 data URI로 안전하게 변환"""
@@ -181,7 +225,6 @@ def safe_icon_to_data_uri(path: str) -> str:
     absolute_path = IMAGE_DIR / Path(path_str).name
     
     if not absolute_path.exists():
-        # st.warning(f"이미지 파일을 찾을 수 없습니다: {absolute_path}")
         return placeholder
     
     try:
@@ -189,7 +232,6 @@ def safe_icon_to_data_uri(path: str) -> str:
             b64_str = base64.b64encode(img_file.read()).decode()
         return f"data:image/png;base64,{b64_str}"
     except Exception as e:
-        st.error(f"이미지 인코딩 오류: {e}")
         return placeholder
 
 @st.cache_data
@@ -199,7 +241,7 @@ def load_character_data():
     
     if not csv_path.exists():
         st.error(f"📋 퀴즈 데이터를 불러올 수 없습니다. '{csv_path}' 파일을 확인해주세요.")
-        st.info("💡 프로젝트의 `data/csv` 폴더에 `eden_quiz_data.csv` 파일이 있는지 확인하세요.")
+        st.info("💡 프로젝트의 `04_data/csv` 폴더에 `eden_quiz_data.csv` 파일이 있는지 확인하세요.")
         return None
 
     try:
@@ -304,14 +346,13 @@ class QuizGame:
             self.retry_count += 1
             self.silhouette_revealed = True # 틀려도 실루엣은 공개
 
-            # --- 3. 재시도 로직 수정 ---
             # 재시도 기회가 남아있는 경우
             if self.retry_count < self.max_retries:
                 remaining = self.max_retries - self.retry_count
                 return {
                     'result': 'partial', 
                     'message': f'❌ 아쉬워요! 재시도 기회가 {remaining}번 남았습니다.',
-                    'show_next': False # '다시 시도' 또는 '다음 문제' 버튼 표시
+                    'show_next': False
                 }
             # 모든 기회를 소진한 경우
             else:
@@ -321,7 +362,8 @@ class QuizGame:
                     'show_next': True
                 }
 
-def main():
+def show_quiz_page():
+    """퀴즈 페이지 표시"""
     st.title("🎮 Another Eden 캐릭터 퀴즈쇼")
     st.markdown("---")
 
@@ -340,7 +382,7 @@ def main():
 
     game = st.session_state.game
 
-    # --- 사이드바 UI ---
+    # 사이드바 UI
     st.sidebar.header("🎲 퀴즈 설정")
     quiz_type = st.sidebar.selectbox(
         "퀴즈 유형 선택",
@@ -366,7 +408,7 @@ def main():
         st.session_state.result = None
         st.rerun()
 
-    # --- 점수판 ---
+    # 점수판
     st.sidebar.header("📊 점수판")
     if game.total_questions > 0:
         accuracy = (game.session_stats['correct_answers'] / game.total_questions) * 100
@@ -380,7 +422,7 @@ def main():
         - **푼 문제:** {game.total_questions}
     """)
     
-    # --- 메인 퀴즈 화면 ---
+    # 메인 퀴즈 화면
     if st.session_state.quiz:
         quiz = st.session_state.quiz
         
@@ -444,7 +486,6 @@ def main():
                 c1, c2 = st.columns(2)
                 with c1:
                     if st.button("🔄 다시 시도", use_container_width=True):
-                        # 상태를 답변 전으로 되돌림
                         st.session_state.answered = False
                         st.session_state.result = None
                         st.rerun()
@@ -463,6 +504,76 @@ def main():
             <p>왼쪽 사이드바에서 퀴즈 유형을 선택하고 '새 문제 생성' 버튼을 눌러 시작하세요.</p>
         </div>
         """, unsafe_allow_html=True)
+
+def show_roulette_page():
+    """룰렛 페이지 표시"""
+    st.title("🎲 Another Eden 캐릭터 룰렛")
+    st.markdown("---")
+    
+    # 룰렛 기능 구현
+    st.markdown("""
+    <div class="roulette-container">
+        <h2>🎲 캐릭터 룰렛</h2>
+        <p>랜덤으로 캐릭터를 선택해보세요!</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 간단한 룰렛 구현
+    df = load_character_data()
+    if df is not None:
+        if st.button("🎰 룰렛 돌리기", use_container_width=True, key="roulette_spin"):
+            # 랜덤 캐릭터 선택
+            random_char = df.sample(n=1).iloc[0]
+            
+            st.markdown(f"""
+            <div class="roulette-container">
+                <h3>🎉 당첨된 캐릭터!</h3>
+                <h2>{random_char['캐릭터명']}</h2>
+                <p><strong>희귀도:</strong> {random_char['희귀도']}</p>
+                <p><strong>속성:</strong> {random_char['속성명리스트']}</p>
+                <p><strong>무기:</strong> {random_char['무기명리스트']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # 캐릭터 이미지 표시
+            if random_char['캐릭터아이콘경로']:
+                image_uri = safe_icon_to_data_uri(random_char['캐릭터아이콘경로'])
+                st.markdown(f"""
+                <div style="text-align: center;">
+                    <img src="{image_uri}" style="max-width: 200px; border-radius: 15px; margin: 1rem 0;">
+                </div>
+                """, unsafe_allow_html=True)
+
+def main():
+    """메인 함수"""
+    st.title("🎮 Another Eden 통합 앱")
+    st.markdown("---")
+    
+    # 사이드바에서 페이지 선택
+    page = st.sidebar.selectbox(
+        "📱 페이지 선택",
+        ["🏠 홈", "🎮 퀴즈", "🎲 룰렛"]
+    )
+    
+    if page == "🏠 홈":
+        st.markdown("""
+        <div class="main-container">
+            <h1>🎮 Another Eden 통합 앱에 오신 것을 환영합니다!</h1>
+            <p>왼쪽 사이드바에서 원하는 기능을 선택하세요.</p>
+            <br>
+            <h3>📱 사용 가능한 기능</h3>
+            <ul style="text-align: left; display: inline-block;">
+                <li>🎮 <strong>퀴즈</strong> - 캐릭터 이름 맞추기 및 실루엣 퀴즈</li>
+                <li>🎲 <strong>룰렛</strong> - 랜덤 캐릭터 선택</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    elif page == "🎮 퀴즈":
+        show_quiz_page()
+        
+    elif page == "🎲 룰렛":
+        show_roulette_page()
 
     # 저작권 정보
     st.markdown("---")
