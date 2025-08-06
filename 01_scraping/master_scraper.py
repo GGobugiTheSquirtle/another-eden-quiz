@@ -224,8 +224,65 @@ class MasterScraper:
             print(f"⚠️ 알 수 없는 오류로 이미지 다운로드 실패: {full_image_url} ({e})")
             return None
     
+    def download_character_image(self, image_url, kor_name, eng_name):
+        """캐릭터 이미지 다운로드 및 저장 (중복 방지 개선)"""
+        if not image_url:
+            return None
+        
+        try:
+            # URL 정규화
+            if not image_url.startswith('http'):
+                full_image_url = urljoin(BASE_URL, image_url)
+            else:
+                full_image_url = image_url
+            
+            # 파일명 정규화
+            final_name = self.normalize_image_filename(kor_name, eng_name)
+            final_filename = final_name
+
+            # 저장 경로 설정 및 중복 확인
+            save_path = IMAGE_DIR / final_filename
+            save_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 중복 파일 체크 강화 (파일이 이미 존재하고 크기가 적절하면 스킵)
+            if save_path.exists() and save_path.stat().st_size > 1000:  # 최소 1KB
+                print(f"  ✅ 이미지 이미 존재: {save_path.name}")
+                return str(save_path.relative_to(self.project_root).as_posix())
+
+            # 이미지 다운로드
+            print(f"  📥 이미지 다운로드 중: {save_path.name}")
+            img_response = requests.get(full_image_url, headers=self.headers, timeout=20, stream=True)
+            img_response.raise_for_status()
+
+            # 파일 크기 체크
+            content_length = img_response.headers.get('content-length')
+            if content_length and int(content_length) < 1000:
+                print(f"  ⚠️ 이미지 파일이 너무 작음: {content_length}바이트")
+                return None
+
+            # 파일 저장
+            with open(save_path, 'wb') as f:
+                for chunk in img_response.iter_content(8192):
+                    f.write(chunk)
+            
+            # 저장된 파일 크기 재확인
+            if save_path.stat().st_size < 1000:
+                print(f"  ⚠️ 저장된 이미지 파일이 너무 작음")
+                save_path.unlink()  # 작은 파일 삭제
+                return None
+            
+            print(f"  ✅ 이미지 저장 완료: {save_path.name} ({save_path.stat().st_size}바이트)")
+            return str(save_path.relative_to(self.project_root).as_posix())
+
+        except requests.exceptions.RequestException as e:
+            print(f"  ⚠️ 네트워크 오류로 이미지 다운로드 실패: {full_image_url} ({e})")
+            return None
+        except Exception as e:
+            print(f"  ⚠️ 알 수 없는 오류로 이미지 다운로드 실패: {full_image_url} ({e})")
+            return None
+    
     def download_icon(self, icon_url, alt_text, subfolder):
-        """아이콘 다운로드 및 저장"""
+        """아이콘 다운로드 및 저장 (중복 방지)"""
         if not icon_url:
             return ""
         
@@ -238,58 +295,59 @@ class MasterScraper:
             if alt_text is None:
                 alt_text = "unknown"
             elif not isinstance(alt_text, str):
-                alt_text = str(alt_text)
+                try:
+                    alt_text = str(alt_text)
+                except:
+                    alt_text = "unknown"
             
-            # 파일명 생성
+            # URL에서 파일명 추출
             parsed_url = urlparse(icon_url)
             query_params = parse_qs(parsed_url.query)
             icon_name_from_f = query_params.get('f', [None])[0]
             
+            # 원본 파일명 기반으로 저장 파일명 생성
             if icon_name_from_f:
-                icon_name = os.path.basename(unquote(icon_name_from_f))
+                original_name = os.path.basename(unquote(icon_name_from_f))
+                base_name, ext = os.path.splitext(original_name)
             else:
-                icon_name = os.path.basename(unquote(parsed_url.path.split('?')[0]))
+                original_name = os.path.basename(unquote(parsed_url.path.split('?')[0]))
+                base_name, ext = os.path.splitext(original_name)
             
             # 확장자 처리
-            if not icon_name or icon_name.lower() in ["thumb.php", "index.php"]:
-                try:
-                    head_resp = requests.head(icon_url, timeout=3, allow_redirects=True)
-                    head_resp.raise_for_status()
-                    content_type = head_resp.headers.get('Content-Type')
-                    if content_type:
-                        guessed_ext = mimetypes.guess_extension(content_type.split(';')[0])
-                        if guessed_ext:
-                            ext = guessed_ext
-                        else:
-                            ext = ".png"
-                    else:
-                        ext = ".png"
-                except requests.exceptions.RequestException:
-                    ext = ".png"
+            if not ext or ext.lower() in ['.php'] or len(ext) > 5:
+                ext = ".png"
+            
+            # 파일명 정리 (원본 파일명 우선 사용)
+            if base_name and base_name.lower() not in ["thumb", "index"]:
+                clean_name = self.sanitize_filename(base_name)
             else:
-                base_name, ext = os.path.splitext(icon_name)
-                if not ext or len(ext) > 5:
-                    ext = ".png"
+                # alt_text를 파일명으로 사용
+                clean_name = re.sub(r'[^\w\-_]', '', alt_text.replace(' ', '_').lower())
+                if not clean_name:
+                    clean_name = "unknown"
             
-            # 아이콘 파일명 생성 (중복 방지)
-            base_name = alt_text.replace(' ', '_').lower()
-            # 특수문자 제거 및 안전한 파일명 생성
-            base_name = re.sub(r'[^\w\-_]', '', base_name)
-            if not base_name:
-                base_name = "unknown"
-            
-            icon_filename = f"{base_name}{ext}"
-            icon_filename = self.sanitize_filename(icon_filename)
+            icon_filename = f"{clean_name}{ext}"
             
             # 저장 경로 설정
             icon_dir = IMAGE_DIR / subfolder
             icon_dir.mkdir(exist_ok=True)
             save_path = icon_dir / icon_filename
+            
+            # 중복 파일 체크 (파일이 이미 존재하고 크기가 0보다 크면 스킵)
+            if save_path.exists() and save_path.stat().st_size > 0:
+                return str(save_path.relative_to(self.project_root).as_posix())
+            
+            # 중복 파일명 처리 (필요시)
             save_path = self.get_unique_filename(save_path)
             
             # 아이콘 다운로드
             response = requests.get(icon_url, headers=self.headers, timeout=30)
             response.raise_for_status()
+            
+            # 파일 크기 체크 (최소 100바이트)
+            if len(response.content) < 100:
+                print(f"  ⚠️ 파일 크기가 너무 작음: {icon_url}")
+                return ""
             
             # 파일 저장
             with open(save_path, 'wb') as f:
@@ -298,8 +356,11 @@ class MasterScraper:
             print(f"  🎯 아이콘 저장: {save_path.name}")
             return str(save_path.relative_to(self.project_root).as_posix())
             
+        except requests.exceptions.RequestException as e:
+            print(f"  ⚠️ 네트워크 오류로 아이콘 다운로드 실패 ({icon_url}): {e}")
+            return ""
         except Exception as e:
-            print(f"⚠️ 아이콘 다운로드 실패 ({icon_url}): {e}")
+            print(f"  ⚠️ 아이콘 다운로드 실패 ({icon_url}): {e}")
             return ""
     
     def scrape_character_list(self):
@@ -654,7 +715,7 @@ class MasterScraper:
                         else:
                             data['weapons'] = 'Obtain'
             
-            # 고화질 이미지 추출
+            # 고화질 이미지 추출 및 다운로드
             img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
             if img_tag:
                 img_src = img_tag.get('src', '')
@@ -662,6 +723,12 @@ class MasterScraper:
                     data['high_res_image_url'] = img_src
                 else:
                     data['high_res_image_url'] = urljoin(BASE_URL, img_src)
+                
+                # 이미지 다운로드
+                kor_name = data.get('korean_name', eng_name)
+                image_path = self.download_character_image(data['high_res_image_url'], kor_name, eng_name)
+                if image_path:
+                    data['image_path'] = image_path
             
             # 데이터 정리
             cleaned_data = self.clean_scraped_data(data)
@@ -677,6 +744,8 @@ class MasterScraper:
                     print(f"    🎯 속성 아이콘: {len(element_icons)}개")
                 if weapon_icons:
                     print(f"    ⚔️ 무기 아이콘: {len(weapon_icons)}개")
+                if cleaned_data.get('image_path'):
+                    print(f"    🖼️ 이미지: {cleaned_data['image_path']}")
             
             return cleaned_data
             
@@ -953,15 +1022,56 @@ class MasterScraper:
         
         personality_data = self.scrape_all_personalities()
         
+        # 기존 데이터 로드 (중복 체크용)
+        existing_data = {}
+        quiz_csv_path = CSV_DIR / "eden_quiz_data.csv"
+        if quiz_csv_path.exists():
+            try:
+                existing_df = pd.read_csv(quiz_csv_path, encoding='utf-8-sig')
+                for _, row in existing_df.iterrows():
+                    existing_data[row['English_Name']] = True
+                print(f"📋 기존 데이터 로드: {len(existing_data)}개 캐릭터")
+            except Exception as e:
+                print(f"⚠️ 기존 데이터 로드 실패: {e}")
+        
         # --- Phase 1: Scrape all data ---
         print("\n--- Phase 1: 모든 데이터 스크래핑 ---")
         all_details = []
         print("📄 캐릭터 상세 정보 일괄 스크래핑 중...")
+        
+        skipped_count = 0
+        scraped_count = 0
+        
         for i, char in enumerate(characters, 1):
             eng_name = char['english_name']
+            
+            # 중복 체크 (기존 데이터가 있고 이미지도 존재하면 스킵)
+            if eng_name in existing_data:
+                # 이미지 파일도 체크
+                normalized_name = self.normalize_image_filename(char.get('korean_name', ''), eng_name)
+                image_path = IMAGE_DIR / normalized_name
+                
+                if image_path.exists() and image_path.stat().st_size > 0:
+                    print(f"[{i}/{len(characters)}] {eng_name} - 이미 처리됨, 스킵")
+                    skipped_count += 1
+                    # 기존 데이터 사용
+                    existing_char_data = {
+                        'english_name': eng_name,
+                        'korean_name': char.get('korean_name', ''),
+                        'image_path': str(image_path.relative_to(self.project_root).as_posix())
+                    }
+                    all_details.append(existing_char_data)
+                    continue
+            
             print(f"[{i}/{len(characters)}] {eng_name} 상세 정보 가져오는 중...")
             details = self.scrape_character_details(char['detail_url'], eng_name)
             all_details.append(details)
+            scraped_count += 1
+            
+            # 진행 상황 출력
+            if i % 50 == 0:
+                print(f"  📊 진행률: {i}/{len(characters)} ({i/len(characters)*100:.1f}%) - 스킵: {skipped_count}, 스크래핑: {scraped_count}")
+            
             time.sleep(0.5)  # 서버 부하 방지를 위해 대기 시간 증가
 
         # --- Phase 2: Process all data ---
@@ -1003,7 +1113,7 @@ class MasterScraper:
             
             print(f"[{i}/{len(processed_characters)}] {kor_name} ({eng_name}) 이미지 다운로드 중...")
             if image_url:
-                image_path = self.download_image(image_url, kor_name=kor_name, eng_name=eng_name)
+                image_path = self.download_character_image(image_url, kor_name=kor_name, eng_name=eng_name)
                 char['image_path'] = image_path or ''
             else:
                 print(f"  ❌ 이미지 URL 없음")
