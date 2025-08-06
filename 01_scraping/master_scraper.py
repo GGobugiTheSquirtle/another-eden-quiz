@@ -292,30 +292,30 @@ class MasterScraper:
             return ""
     
     def scrape_character_list(self):
-        """캐릭터 목록 페이지 스크래핑"""
+        """캐릭터 목록 페이지 스크래핑 (출시일 포함)"""
         print("📡 캐릭터 목록 스크래핑 중...")
         try:
             response = requests.get(TARGET_URL, headers=self.headers, timeout=30)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, 'html.parser')
             
-            # 테이블 찾기
-            tables = soup.find_all('table', class_='wikitable')
-            if not tables:
+            # 캐릭터 테이블 찾기 (다양한 클래스명 시도)
+            char_table = soup.find('table', class_='chara-table') or soup.find('table', class_='wikitable')
+            if not char_table:
                 print("❌ 캐릭터 테이블을 찾을 수 없습니다")
                 return []
             
             characters = []
-            for table in tables:
-                rows = table.find_all('tr')[1:]  # 헤더 제외
+            rows = char_table.find_all('tr')[1:]  # 헤더 제외
+            
+            for row in rows:
+                cols = row.find_all(['td', 'th'])
+                if len(cols) < 4:  # 최소 4개 컬럼 필요 (아이콘, 이름, 속성/장비, 출시일)
+                    continue
                 
-                for row in rows:
-                    cols = row.find_all(['td', 'th'])
-                    if len(cols) < 2:
-                        continue
-                    
+                try:
                     # 캐릭터 링크 및 이름 추출
-                    char_link = cols[0].find('a')
+                    char_link = cols[1].find('a')  # 이름은 보통 두 번째 컬럼
                     if not char_link:
                         continue
                     
@@ -325,15 +325,32 @@ class MasterScraper:
                     if not eng_name or not detail_url:
                         continue
                     
-                    # 이미지 URL 추출
+                    # 이미지 URL 추출 (첫 번째 컬럼)
                     img_tag = cols[0].find('img')
                     img_url = img_tag.get('src', '') if img_tag else ''
+                    
+                    # 출시일 추출 (네 번째 컬럼, 레거시 로직 적용)
+                    release_date = ""
+                    if len(cols) >= 4:
+                        release_date = cols[3].get_text(strip=True)
+                        # 날짜 형식 정규화 (YYYY/MM/DD)
+                        if release_date and len(release_date) > 5:
+                            # 다양한 날짜 형식 처리
+                            date_match = re.search(r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})', release_date)
+                            if date_match:
+                                year, month, day = date_match.groups()
+                                release_date = f"{year}/{int(month):02d}/{int(day):02d}"
                     
                     characters.append({
                         'english_name': eng_name,
                         'detail_url': detail_url,
-                        'image_url': img_url
+                        'image_url': img_url,
+                        'release_date': release_date
                     })
+                    
+                except Exception as e:
+                    print(f"⚠️ 행 파싱 오류: {e}")
+                    continue
             
             print(f"✅ 캐릭터 목록 스크래핑 완료: {len(characters)}개")
             return characters
@@ -343,58 +360,108 @@ class MasterScraper:
             return []
     
     def clean_scraped_data(self, data):
-        """스크래핑된 데이터 정리"""
+        """스크래핑된 데이터 정리 및 표준화 (완전 자동화)"""
         cleaned_data = {}
         
-        # 희귀도 정리 (SA 정보 포함)
-        if 'rarity' in data:
-            rarity = data['rarity']
-            # SA 정보 확인
-            is_sa = 'SA' in rarity.upper() or 'Stellar Awakened' in rarity or '성도각성' in rarity
-            
-            # 숫자와 별표 추출
-            rarity_match = re.search(r'(\d+)\s*★', rarity)
-            if rarity_match:
-                star_count = rarity_match.group(1)
-                if is_sa:
-                    cleaned_data['rarity'] = f"{star_count}★ 성도각성"
-                else:
-                    cleaned_data['rarity'] = f"{star_count}★"
-            else:
-                if is_sa:
-                    cleaned_data['rarity'] = "성도각성"
-                else:
-                    cleaned_data['rarity'] = rarity
+        # 기본 데이터 복사
+        for key, value in data.items():
+            cleaned_data[key] = value
         
-        # 속성 정리
-        if 'elements' in data:
-            elements = data['elements']
-            # 기본 속성만 추출 (Fire, Water, Earth, Wind, Light, Dark)
-            basic_elements = []
-            element_keywords = ['Fire', 'Water', 'Earth', 'Wind', 'Light', 'Dark', 'Crystal']
-            for element in element_keywords:
-                if element.lower() in elements.lower():
-                    basic_elements.append(element)
-            
-            if basic_elements:
-                cleaned_data['elements'] = ', '.join(basic_elements)
-            else:
-                cleaned_data['elements'] = elements
+        # 파일명 안전화 함수
+        def safe_filename(name):
+            if not name:
+                return "unknown"
+            unsafe_chars = r'<>:"/\|?*'
+            safe_name = str(name)
+            for char in unsafe_chars:
+                safe_name = safe_name.replace(char, '_')
+            safe_name = safe_name.replace(' ', '_')
+            safe_name = re.sub(r'_+', '_', safe_name)
+            return safe_name.strip('_')
         
-        # 무기 정리
-        if 'weapons' in data:
-            weapons = data['weapons']
-            # 기본 무기만 추출
-            basic_weapons = []
-            weapon_keywords = ['Sword', 'Katana', 'Axe', 'Hammer', 'Spear', 'Bow', 'Staff', 'Fist']
-            for weapon in weapon_keywords:
-                if weapon.lower() in weapons.lower():
-                    basic_weapons.append(weapon)
+        # 희귀도 표준화 및 3-4성 여부 확인
+        def normalize_rarity_and_check(rarity_str):
+            if not isinstance(rarity_str, str):
+                return str(rarity_str), False
             
-            if basic_weapons:
-                cleaned_data['weapons'] = ', '.join(basic_weapons)
-            else:
-                cleaned_data['weapons'] = weapons
+            rarity_str = rarity_str.strip()
+            has_sa = 'SA' in rarity_str.upper() or '성도각성' in rarity_str or 'Stellar Awakened' in rarity_str
+            
+            nums = re.findall(r'(\d)(?=★)', rarity_str)
+            if nums:
+                max_star = max(int(n) for n in nums)
+                normalized = f"{max_star}★{' SA' if has_sa else ''}".strip()
+                is_3_4_star = max_star in [3, 4]
+                return normalized, is_3_4_star
+            
+            return rarity_str, False
+        
+        # 퍼스널리티 정리 (속성/무기 키워드 제외)
+        def clean_personalities(personality_str):
+            if not isinstance(personality_str, str) or not personality_str:
+                return []
+            
+            personalities = [p.strip() for p in personality_str.split(',') if p.strip()]
+            
+            element_keywords = [
+                'fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal', 'thunder', 'shade',
+                '땅', '불', '바람', '물', '빛', '어둠', '번개', '크리스탈', '화', '수', '지', '풍'
+            ]
+            weapon_keywords = [
+                'sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance',
+                '검', '도', '도끼', '망치', '창', '활', '지팡이', '주먹', '랜스', '권갑'
+            ]
+            
+            clean_personalities = []
+            for personality in personalities:
+                personality_lower = personality.lower()
+                is_element = any(keyword in personality_lower for keyword in element_keywords)
+                is_weapon = any(keyword in personality_lower for keyword in weapon_keywords)
+                
+                if not is_element and not is_weapon and len(personality) > 1:
+                    clean_personalities.append(personality)
+            
+            return clean_personalities
+        
+        # 출시일 표준화 함수
+        def standardize_release_date(date_str):
+            if not date_str or not isinstance(date_str, str):
+                return ""
+            
+            date_match = re.search(r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})', date_str)
+            if date_match:
+                year, month, day = date_match.groups()
+                return f"{year}/{int(month):02d}/{int(day):02d}"
+            return date_str
+        
+        # 1. 희귀도 정리 (3-4성 여부 확인)
+        if 'rarity' in cleaned_data:
+            normalized_rarity, is_3_4_star = normalize_rarity_and_check(cleaned_data['rarity'])
+            cleaned_data['rarity'] = normalized_rarity
+            cleaned_data['is_3_4_star'] = is_3_4_star
+        
+        # 2. 퍼스널리티 정리
+        if 'personality' in cleaned_data:
+            clean_pers = clean_personalities(cleaned_data['personality'])
+            cleaned_data['personality'] = ', '.join(clean_pers) if clean_pers else ""
+            cleaned_data['personality_list'] = clean_pers
+        
+        # 3. 출시일 표준화
+        if 'release_date' in cleaned_data:
+            cleaned_data['release_date'] = standardize_release_date(cleaned_data['release_date'])
+        
+        # 4. 안전한 파일명 생성
+        if 'korean_name' in cleaned_data:
+            cleaned_data['safe_filename'] = safe_filename(cleaned_data['korean_name'])
+        elif 'english_name' in cleaned_data:
+            cleaned_data['safe_filename'] = safe_filename(cleaned_data['english_name'])
+        else:
+            cleaned_data['safe_filename'] = "unknown_character"
+        
+        # 5. 데이터 검증 및 완성도 확인
+        required_fields = ['korean_name', 'english_name', 'element', 'weapon']
+        completeness_score = sum(1 for field in required_fields if cleaned_data.get(field))
+        cleaned_data['data_completeness'] = completeness_score / len(required_fields)
         
         return cleaned_data
 
@@ -598,10 +665,10 @@ class MasterScraper:
             return None
 
     def generate_csv_files(self, characters, personality_data):
-        """통일된 CSV 파일들 생성 (퀴즈용 + 룰렛용)"""
+        """통일된 CSV 파일들 생성 (퀴즈용 + 룰렛용 + 출시일 포함)"""
         print("📋 통일된 CSV 파일들 생성 중...")
         
-        # 1. 퀴즈용 데이터 (통일된 구조)
+        # 1. 퀴즈용 데이터 (출시일 추가)
         quiz_data = []
         for char in characters:
             # 퍼스널리티 정보 가져오기
@@ -621,7 +688,8 @@ class MasterScraper:
                 '희귀도': char.get('rarity', ''),
                 '속성명리스트': char.get('elements', ''),
                 '무기명리스트': char.get('weapons', ''),
-                '퍼스널리티리스트': ', '.join(korean_personalities)
+                '퍼스널리티리스트': ', '.join(korean_personalities),
+                '출시일': char.get('release_date', '')  # 출시일 추가
             })
         
         quiz_df = pd.DataFrame(quiz_data)
@@ -629,7 +697,7 @@ class MasterScraper:
         quiz_df.to_csv(quiz_csv_path, index=False, encoding='utf-8-sig')
         print(f"✅ 퀴즈 데이터 저장: {quiz_csv_path}")
 
-        # 2. 룰렛용 데이터 (아이콘 포함 확장 구조)
+        # 2. 룰렛용 데이터 (아이콘 포함 확장 구조 + 출시일)
         roulette_data = []
         for char in characters:
             # 퍼스널리티 정보 가져오기
@@ -675,7 +743,8 @@ class MasterScraper:
                 '무기_아이콘경로리스트': '|'.join(weapon_icons),
                 '방어구명리스트': '',  # 현재 스크래퍼에서 방어구 정보 없음
                 '방어구_아이콘경로리스트': '|'.join(armor_icons),
-                '퍼스널리티리스트': ', '.join(korean_personalities)
+                '퍼스널리티리스트': ', '.join(korean_personalities),
+                '출시일': char.get('release_date', '')  # 출시일 추가
             })
         
         roulette_df = pd.DataFrame(roulette_data)
@@ -705,7 +774,7 @@ class MasterScraper:
         personality_df.to_csv(personality_csv_path, index=False, encoding='utf-8-sig')
         print(f"✅ 퍼스널리티 데이터 저장: {personality_csv_path}")
 
-        # 3. 퍼스널리티 데이터 (character_personalities.csv)
+        # 4. 통합 퍼스널리티 데이터 (중복 제거된 버전)
         personality_list = []
         for char_name, personalities in personality_data.items():
             personality_list.append({
@@ -714,16 +783,37 @@ class MasterScraper:
                 'Personalities_List': '|'.join(personalities)
             })
         
-        personality_df = pd.DataFrame(personality_list)
-        personality_df.sort_values('Personalities_Count', ascending=False, inplace=True)
-        personality_csv_path = CSV_DIR / "character_personalities.csv"
-        personality_df.to_csv(personality_csv_path, index=False, encoding='utf-8-sig')
-        print(f"✅ 퍼스널리티 데이터 저장: {personality_csv_path}")
+        personality_summary_df = pd.DataFrame(personality_list)
+        personality_summary_df.sort_values('Personalities_Count', ascending=False, inplace=True)
+        personality_summary_csv_path = CSV_DIR / "character_personalities_summary.csv"
+        personality_summary_df.to_csv(personality_summary_csv_path, index=False, encoding='utf-8-sig')
+        print(f"✅ 퍼스널리티 요약 데이터 저장: {personality_summary_csv_path}")
         
         return quiz_csv_path, roulette_csv_path, personality_csv_path
 
+    def organize_scraped_images(self, characters):
+        """스크래핑된 이미지 자동 정리 (레거시 기능 복원)"""
+        from .image_organizer import ImageOrganizer
+        
+        print("🗂️ 이미지 자동 정리 시작...")
+        try:
+            organizer = ImageOrganizer(self.project_root)
+            
+            # 1. 백업 이미지들 복사
+            organizer.copy_backup_images()
+            
+            # 2. CSV 기반 이미지 정리 
+            csv_path = CSV_DIR / "eden_quiz_data.csv"
+            if csv_path.exists():
+                organizer.create_organized_folders(csv_path)
+            else:
+                print("⚠️ 퀴즈 데이터 CSV가 없어 이미지 정리를 건너뜁니다.")
+                
+        except Exception as e:
+            print(f"⚠️ 이미지 정리 중 오류 발생: {e}")
+    
     def run_full_scraping(self):
-        """전체 스크래핑 실행"""
+        """전체 스크래핑 실행 (이미지 정리 포함)"""
         print("🚀 Another Eden 통합 스크래퍼 시작")
         print("=" * 60)
         
@@ -802,6 +892,10 @@ class MasterScraper:
         excel_path = self.create_excel_with_images(characters)
         csv_paths = self.generate_csv_files(characters, personality_data)
         
+        # --- Phase 4: 이미지 자동 정리 (레거시 기능 복원) ---
+        print("\n--- Phase 4: 이미지 자동 정리 ---")
+        self.organize_scraped_images(characters)
+        
         print("\n🎉 통합 스크래핑 완료!")
         print("=" * 60)
         print(f"📊 총 캐릭터 수: {len(characters)}")
@@ -809,6 +903,7 @@ class MasterScraper:
             print(f"💾 엑셀 파일: {excel_path}")
         if csv_paths:
             print(f"💾 CSV 파일들: {', '.join(map(str, csv_paths))}")
+        print(f"🗂️ 정리된 이미지: {IMAGE_DIR.parent}/organized_character_art")
         
         return True
 
