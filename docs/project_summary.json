@@ -1,0 +1,26 @@
+{
+  "project_name": "Another Eden Quiz & Roulette System",
+  "description": "Interactive quiz games and character roulette for Another Eden",
+  "version": "2.0.0",
+  "created_date": "2025-08-03",
+  "main_apps": {
+    "eden_integrated_launcher.py": "Main control center and dashboard",
+    "eden_quiz_app.py": "Interactive quiz game with 5 modes",
+    "eden_personality_scraper.py": "Enhanced data scraper with personalities",
+    "streamlit_eden_restructure.py": "Original roulette and filtering system"
+  },
+  "data_files": {
+    "Matching_names.csv": "English ↔ Korean character name mappings",
+    "eden_roulette_data.csv": "Processed character data for apps",
+    "character_art/": "Character images and icons"
+  },
+  "deployment": {
+    "local": "streamlit run [app_name].py",
+    "cloud": "Upload to Streamlit Community Cloud",
+    "ports": {
+      "launcher": 8501,
+      "quiz": 8502,
+      "roulette": 8503
+    }
+  }
+}

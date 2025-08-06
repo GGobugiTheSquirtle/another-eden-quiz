@@ -1,0 +1,22 @@
+# Streamlit 앱 테마 설정
+[theme]
+primaryColor = "#FF6B6B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif"
+
+# 서버 관련 설정
+[server]
+headless = true
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
+
+# 브라우저 설정
+[browser]
+gatherUsageStats = false
+
+# Streamlit 실행 관련 설정
+[runner]
+magicEnabled = false

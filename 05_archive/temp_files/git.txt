@@ -1,0 +1,11 @@
+# 1. 전체 캐시 초기화 (무시된 파일 포함)
+git rm -r --cached .
+
+# 2. .gitignore 수정본과 모든 예외 포함 파일 다시 추가
+git add .
+
+# 3. 커밋
+git commit -m "✅ .gitignore 재적용 및 character_art 하위 파일 강제 포함"
+
+# 4. 푸시
+git push
