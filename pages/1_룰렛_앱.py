@@ -537,7 +537,7 @@ def load_and_prepare_data(csv_path, personalities_csv_path, column_map_config):
     # 성공 메시지
     st.success(f"✅ 메인 데이터 로드 완료: {len(df)}명의 캐릭터")
     
-    return df, column_map_config['name'], column_map_config['char_icon'], column_map_config['rarity'], column_map_config['attribute'], column_map_config['weapon'], column_map_config['personality']
+    return df, column_map_config['이름'], column_map_config['캐릭터아이콘경로'], column_map_config['희귀도'], column_map_config['속성명'], column_map_config['무기명'], column_map_config['퍼스널리티']
 
 def create_character_card_html(row: pd.Series, column_map: dict, is_winner: bool = False) -> str:
     """
