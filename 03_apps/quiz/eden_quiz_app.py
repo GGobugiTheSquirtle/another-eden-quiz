@@ -423,12 +423,17 @@ def load_character_data():
     # Streamlit Cloud 환경 감지
     is_cloud = os.environ.get('STREAMLIT_SHARING', False) or '/app' in str(Path.cwd())
     
-    # 경로 검증 및 디버깅 정보
-    st.info(f"🔍 데이터 파일 경로: {csv_path}")
-    st.info(f"📁 프로젝트 루트: {project_root}")
-    st.info(f"☁️ Cloud 환경: {'예' if is_cloud else '아니오'}")
-    st.info(f"💻 현재 작업 디렉토리: {Path.cwd()}")
-    st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
+    # 개발자 모드 감지 (URL 파라미터로 제어)
+    query_params = st.experimental_get_query_params()
+    debug_mode = query_params.get('debug', [False])[0] == 'true'
+    
+    # 경로 검증 및 디버깅 정보 (개발자 모드에서만 표시)
+    if debug_mode:
+        st.info(f"🔍 데이터 파일 경로: {csv_path}")
+        st.info(f"📁 프로젝트 루트: {project_root}")
+        st.info(f"☁️ Cloud 환경: {'예' if is_cloud else '아니오'}")
+        st.info(f"💻 현재 작업 디렉토리: {Path.cwd()}")
+        st.info(f"📂 CSV 디렉토리 존재: {(project_root / '04_data' / 'csv').exists()}")
     
     # Cloud 환경이면 우선적으로 Cloud 경로 시도
     if is_cloud:
@@ -441,11 +446,17 @@ def load_character_data():
         for cloud_path in cloud_paths:
             if cloud_path.exists():
                 csv_path = cloud_path
-                st.success(f"☁️ Cloud 환경에서 파일 발견: {csv_path}")
+                if debug_mode:
+                    st.success(f"☁️ Cloud 환경에서 파일 발견: {csv_path}")
                 break
     
     # 파일 존재 여부 확인
     if not csv_path.exists():
+        if not debug_mode:
+            st.error("📋 퀴즈 데이터를 불러올 수 없습니다.")
+            st.info("💡 잠시 후 다시 시도해주세요. 문제가 지속되면 관리자에게 문의하세요.")
+            st.stop()
+        
         st.error(f"❌ CSV 파일을 찾을 수 없습니다: {csv_path}")
         
         # 대체 경로 시도 (Cloud Streamlit 환경 대응)
@@ -479,37 +490,52 @@ def load_character_data():
         
         if not available_files:
             st.error("❌ 어떤 CSV 파일도 찾을 수 없습니다.")
-            st.info("💡 **해결 방법**:")
-            st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
-            st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
-            st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
-            
-            # Cloud Streamlit 환경에서 파일 업로드 안내
-            st.markdown("### 📤 Cloud 환경에서 파일 업로드")
-            st.info("Cloud Streamlit 환경에서는 CSV 파일을 직접 업로드해야 할 수 있습니다.")
-            st.info("메인 런쳐의 '📊 데이터 관리' 페이지에서 파일을 업로드하세요.")
+            if debug_mode:
+                st.info("💡 **해결 방법**:")
+                st.info("1. 메인 런쳐에서 '📡 데이터 스크래퍼 실행'을 클릭하세요.")
+                st.info("2. 파일이 올바른 위치에 있는지 확인하세요.")
+                st.info("3. Cloud 환경에서는 파일 업로드가 필요할 수 있습니다.")
+                
+                # Cloud Streamlit 환경에서 파일 업로드 안내
+                st.markdown("### 📤 Cloud 환경에서 파일 업로드")
+                st.info("Cloud Streamlit 환경에서는 CSV 파일을 직접 업로드해야 할 수 있습니다.")
+                st.info("메인 런쳐의 '📊 데이터 관리' 페이지에서 파일을 업로드하세요.")
             
             st.stop()
     
     # 파일 읽기 시도 (여러 인코딩)
     try:
         df = pd.read_csv(csv_path, encoding='utf-8-sig').fillna('')
-        st.success(f"✅ UTF-8 인코딩으로 파일 로드 성공")
+        if debug_mode:
+            st.success(f"✅ UTF-8 인코딩으로 파일 로드 성공")
     except UnicodeDecodeError:
         try:
             df = pd.read_csv(csv_path, encoding='cp949').fillna('')
-            st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다. UTF-8로 재저장을 권장합니다.")
+            if debug_mode:
+                st.warning("⚠️ 파일 인코딩을 cp949로 읽었습니다. UTF-8로 재저장을 권장합니다.")
         except Exception as e:
-            st.error(f"❌ 파일 읽기 실패: {str(e)}")
-            st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            if debug_mode:
+                st.error(f"❌ 파일 읽기 실패: {str(e)}")
+                st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 파일을 생성하세요.")
+            else:
+                st.error("📋 데이터 파일을 읽을 수 없습니다.")
+                st.info("💡 잠시 후 다시 시도해주세요.")
             st.stop()
     except Exception as e:
-        st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
+        if debug_mode:
+            st.error(f"❌ 예기치 못한 오류 발생: {str(e)}")
+        else:
+            st.error("📋 데이터를 불러오는 중 오류가 발생했습니다.")
+            st.info("💡 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.")
         st.stop()
     
     # 데이터 검증
     if len(df) == 0:
-        st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        if debug_mode:
+            st.error("📋 CSV 파일이 비어있습니다. 스크래퍼를 실행하여 데이터를 채우세요.")
+        else:
+            st.error("📋 데이터가 없습니다.")
+            st.info("💡 잠시 후 다시 시도해주세요.")
         st.stop()
     
     # 필수 컬럼 확인
@@ -517,9 +543,18 @@ def load_character_data():
     missing_columns = [col for col in required_columns if col not in df.columns]
     
     if missing_columns:
-        st.error(f"📊 필수 컬럼이 누락되었습니다: {missing_columns}")
-        st.info("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+        if debug_mode:
+            st.error(f"❌ 필수 컬럼이 누락되었습니다: {missing_columns}")
+            st.error("💡 스크래퍼를 다시 실행하여 올바른 형식의 데이터를 생성하세요.")
+        else:
+            st.error("📋 데이터 형식에 문제가 있습니다.")
+            st.info("💡 관리자에게 문의하세요.")
         st.stop()
+    
+    # 데이터 로딩 성공
+    if debug_mode:
+        st.success(f"✅ 총 {len(df)}개의 캐릭터 데이터를 성공적으로 로드했습니다!")
+        st.info(f"📊 컬럼: {list(df.columns)}")
     
     # 출시일 컬럼이 없는 경우 대비
     if '출시일' not in df.columns:

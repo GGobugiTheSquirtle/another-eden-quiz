@@ -18,6 +18,16 @@ def load_common_css():
             font-family: 'Noto Sans KR', sans-serif;
         }
         
+        /* 브라우저 확장 프로그램 충돌 방지 */
+        iframe {
+            pointer-events: none !important;
+        }
+        
+        /* contentScript 충돌 방지 */
+        div[data-testid="stApp"] {
+            isolation: isolate;
+        }
+        
         /* 공통 그라데이션 배경 */
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -38,6 +48,8 @@ def load_common_css():
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
         }
         
         .card:hover {
