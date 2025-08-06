@@ -551,32 +551,50 @@ class MasterScraper:
             # 다양한 테이블에서 데이터 찾기
             tables = soup.find_all('table')
             
-            # 위치 기반 파싱 (레거시 방식) - 복원
-            for table in tables:
+            # 위치 기반 파싱 (레거시 방식) - 완전 복원
+            element_icons = []
+            weapon_icons = []
+            
+            # 메인 캐릭터 정보 테이블 찾기 (anotherTable, wikitable, infobox)
+            main_tables = soup.find_all('table', class_=['anotherTable', 'wikitable', 'infobox'])
+            print(f"    🔍 {len(main_tables)}개 메인 테이블 발견")
+            
+            for table_idx, table in enumerate(main_tables):
                 rows = table.find_all('tr')
-                for row in rows:
+                table_class = table.get('class', ['없음'])
+                print(f"      📋 테이블 {table_idx} (class={table_class}): {len(rows)}개 행")
+                
+                # 각 행을 확인하여 3번째 셀(인덱스 2)에 이미지가 있는 행 처리
+                for row_idx, row in enumerate(rows):
                     cells = row.find_all(['th', 'td'])
                     
-                    # 위치 기반 파싱 (레거시 방식): 3번째 셀에서 모든 이미지 가져오기
+                    # 3개 이상의 셀이 있는 행에서 3번째 셀 확인
                     if len(cells) >= 3:
-                        element_equipment_cell = cells[2] if len(cells) > 2 else None
-                        if element_equipment_cell:
-                            ee_icon_tags = element_equipment_cell.find_all('img')
+                        element_equipment_cell = cells[2]
+                        ee_icon_tags = element_equipment_cell.find_all('img')
+                        
+                        if ee_icon_tags:  # 이미지가 있는 행만 처리
+                            print(f"        🎯 테이블 {table_idx}, 행 {row_idx}: 3번째 셀에서 {len(ee_icon_tags)}개 이미지 발견")
+                            
                             for img_tag in ee_icon_tags:
                                 src = img_tag.get('src', '')
                                 alt = img_tag.get('alt', '')
                                 
                                 if src:
-                                    # 레거시 방식: 모든 아이콘 다운로드 (필터링 없음)
+                                    # 레거시 방식: 조건 없이 모든 아이콘 다운로드
                                     icon_path = self.download_icon(src, alt, "elements_equipment")
                                     if icon_path:
-                                        # 실제 다운로드된 아이콘 경로를 속성/무기 구분 없이 모두 저장
+                                        # 중복 방지
                                         if icon_path not in element_icons:
                                             element_icons.append(icon_path)
-                                        if icon_path not in weapon_icons:
-                                            weapon_icons.append(icon_path)
+                                            print(f"          ✅ 아이콘 추가: {os.path.basename(icon_path)}")
+                                        else:
+                                            print(f"          🔄 중복 아이콘 스킵: {os.path.basename(icon_path)}")
             
-            # 헤더 기반 파싱 (기존 방식)
+            # 무기 아이콘은 element_icons에서 복사 (레거시 방식)
+            weapon_icons = element_icons.copy()
+            
+            # 헤더 기반 텍스트 파싱 (아이콘은 위에서 이미 처리됨)
             for table in tables:
                 rows = table.find_all('tr')
                 
@@ -595,78 +613,21 @@ class MasterScraper:
                     header_text = header_cell.get_text(strip=True).lower()
                     value_text = value_cell.get_text(strip=True)
                     
-                    # 희귀도 찾기 (SA 정보 포함)
+                    # 희귀도 찾기
                     if any(keyword in header_text for keyword in ['rarity', '희귀도', 'star', '별']):
-                        # 성급 정보가 있으면 저장 (SA 여부와 관계없이)
                         if '★' in value_text or 'star' in value_text.lower():
                             data['rarity'] = value_text
-                        # SA 정보만 있는 경우도 처리
                         elif 'SA' in value_text.upper() or 'Stellar Awakened' in value_text:
-                            # 기본 5★로 설정하고 SA 표시
-                            data['rarity'] = "5★ 성도각성"
+                            data['rarity'] = "5★ SA"
                     
-                    # 속성 찾기
+                    # 속성 텍스트 추출 (아이콘은 이미 위에서 처리됨)
                     elif any(keyword in header_text for keyword in ['element', '속성', 'type']):
-                        # 속성 아이콘에서 추출
-                        img_tags = value_cell.find_all('img')
-                        element_names = []
-                        
-                        for img in img_tags:
-                            src = img.get('src', '')
-                            alt = img.get('alt', '').lower()
-                            
-                            # 속성 아이콘인지 확인
-                            if src and any(element in alt for element in ['fire', 'water', 'earth', 'wind', 'light', 'dark', 'crystal']):
-                                icon_path = self.download_icon(src, alt, "elements_equipment")
-                                if icon_path:
-                                    element_icons.append(icon_path)
-                                    element_names.append(alt)
-                        
-                        # 텍스트에서 속성 추출 (백업 방식)
-                        if not element_names and value_text:
-                            # 속성 패턴 찾기
-                            element_patterns = [
-                                r'\b(Fire|Water|Earth|Wind|Light|Dark|Crystal)\b',
-                                r'\b(화|수|지|풍|광|암|크리스탈)\b'
-                            ]
-                            
-                            found_elements = []
-                            for pattern in element_patterns:
-                                matches = re.findall(pattern, value_text, re.IGNORECASE)
-                                found_elements.extend(matches)
-                            
-                            if found_elements:
-                                data['elements'] = ', '.join(found_elements)
-                            elif len(value_text.strip()) < 100:
-                                # 짧은 텍스트는 속성명으로 간주
-                                data['elements'] = value_text.strip()
-                            else:
-                                data['elements'] = 'N/A'
-                        elif element_names:
-                            # 아이콘에서 추출한 속성명 사용
-                            data['elements'] = ', '.join(element_names)
-                        else:
-                            data['elements'] = 'N/A'
+                        if value_text and len(value_text.strip()) < 100:
+                            data['elements'] = value_text.strip()
                     
-                    # 무기 찾기 (개선된 방식)
+                    # 무기 텍스트 추출 (아이콘은 이미 위에서 처리됨)
                     elif any(keyword in header_text for keyword in ['weapon', '무기', 'arms']):
-                        # 레거시 방식: 모든 이미지를 가져와서 처리
-                        img_tags = value_cell.find_all('img')
-                        weapon_names = []
-                        
-                        for img in img_tags:
-                            src = img.get('src', '')
-                            alt = img.get('alt', '').lower()
-                            
-                            # 무기 아이콘인지 확인
-                            if src and any(weapon in alt for weapon in ['sword', 'katana', 'axe', 'hammer', 'spear', 'bow', 'staff', 'fist', 'lance', 'katana', 'obtain']):
-                                icon_path = self.download_icon(src, alt, "elements_equipment")
-                                if icon_path:
-                                    weapon_icons.append(icon_path)
-                                    weapon_names.append(alt)
-                        
-                        # 텍스트에서 무기명 추출 (백업 방식)
-                        if not weapon_names and value_text:
+                        if value_text:
                             # 잘못된 텍스트 필터링
                             invalid_texts = [
                                 "are not always best to use in every situation",
@@ -681,35 +642,24 @@ class MasterScraper:
                                 "▽(expand)▽"
                             ]
                             
-                            # 텍스트 정리
                             cleaned_text = value_text
                             for invalid_text in invalid_texts:
                                 cleaned_text = cleaned_text.replace(invalid_text, '')
                             
-                            # 무기명 패턴 찾기
-                            weapon_patterns = [
-                                r'\b(Sword|Katana|Axe|Hammer|Spear|Bow|Staff|Fist|Lance|Obtain)\b',
-                                r'\b(검|도|도끼|망치|창|활|지팡이|주먹|랜스|획득)\b'
-                            ]
-                            
-                            found_weapons = []
-                            for pattern in weapon_patterns:
-                                matches = re.findall(pattern, cleaned_text, re.IGNORECASE)
-                                found_weapons.extend(matches)
-                            
-                            if found_weapons:
-                                data['weapons'] = ', '.join(found_weapons)
-                            elif len(cleaned_text.strip()) < 50 and cleaned_text.strip():
-                                # 짧은 텍스트는 무기명으로 간주
+                            if len(cleaned_text.strip()) < 50 and cleaned_text.strip():
                                 data['weapons'] = cleaned_text.strip()
                             else:
                                 data['weapons'] = 'Obtain'
-                                print(f"    ⚠️ {eng_name}: 잘못된 무기명 감지, 기본값 'Obtain'으로 설정")
-                        elif weapon_names:
-                            # 아이콘에서 추출한 무기명 사용
-                            data['weapons'] = ', '.join(weapon_names)
                         else:
                             data['weapons'] = 'Obtain'
+            
+            # 기본값 설정
+            if 'rarity' not in data or not data['rarity']:
+                data['rarity'] = '5★'
+            if 'elements' not in data or not data['elements']:
+                data['elements'] = 'N/A'
+            if 'weapons' not in data or not data['weapons']:
+                data['weapons'] = 'Obtain'
             
             # 고화질 이미지 추출 및 다운로드
             img_tag = soup.find('img', class_='thumbimage') or soup.find('img', class_='infobox-image')
