@@ -1,0 +1,33 @@
+# Streamlit 앱 설정 - 사용자 경험 최적화
+
+[theme]
+# 어나더에덴 테마 색상
+primaryColor = "#667eea"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#2c3e50"
+font = "sans serif"
+
+[browser]
+# 사용량 통계 비활성화
+gatherUsageStats = false
+
+[server]
+# 보안 설정
+enableXsrfProtection = false
+enableCORS = false
+
+# 성능 설정
+maxUploadSize = 50
+maxMessageSize = 50
+
+# 포트 설정 (기본: 8501)
+# port = 8501
+
+[client]
+# 도구 모음 모드 (개발: "developer", 배포: "viewer", "minimal")
+toolbarMode = "viewer"
+
+[ui]
+# 사이드바 숨김 설정
+hideSidebarNav = false

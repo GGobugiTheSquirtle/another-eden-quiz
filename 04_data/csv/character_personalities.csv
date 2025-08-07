@@ -1,367 +1,242 @@
-﻿Korean_Name,English_Name,Personalities_List
-레이븐 AS,Raven (Another Style),"가면, 기억 상실, 후드, Staff, Earth"
-붉은 소매의 행상인,Ruby-Sleeved Merchant,"동방, Itto-Ryu, Land of Mi, Scallywag, Spicy Lover, Sword, Earth"
-푸른 빛의 낫잡이 AS,Cyan Scyther (Another Style),"Sweet tooth, 미식, Lost Laboratory, Ax, Wind"
-리나리아,Linaria,"IDA 스쿨, COA, Sword, Fire"
-의협의 사냥꾼,Selfless Seeker,"총, 무법자, Bow, Earth"
-빨간 외투의 화염술사 AS,Red Clad Flam. (Another Style),"IDA 스쿨, 총, 후드, Lost Laboratory, Fists, Fire, Crystal"
-베레토 AS,Velette (Another Style),"Chronos Empire, Miner, Hammer, Thunder"
-Gunce AS,Gunce (Another Style),
-알도 AS,Aldo (Another Style),"Guiding Light, New Radical Dreamers, New Time Drift, Protagonist, 아르카디아, 바르오키, Concerto Artes, Demon Sword, 용, Forager, Itto-Ryu, Sword, Fire"
-니르야,Nilya,"Dog lover, Forager, MMA, Nicknamer, Fists, Crystal"
-Jilya,Jilya,
-시온 ES,Shion (Extra Style),"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Katana, Fire"
-Laika,Laika,
-센야 AS,Senya (Another Style),"동방, Avenger, Cursed, Fairy, 후드, Land of Mi, Katana, Fire, Shade"
-먹빛의 책사 AS,Jet Tactician (Another Style),"Cat lover, 동방, 독서가, 총, Itto-Ryu, Land of Mi, Staff, Fire"
-Kuramaru,Kuramaru,
-코마치 AS,Komachi (Another Style),"동방, Land of Mi, Lance, Earth"
-빙무의 가희,Hoarfrost Songstress,"동방, Minstrel, Fairy, Bow, Water"
-쿨레르보 AS,Krervo (Another Style),"안경, 과학자, Forager, KMS, Staff"
-카구라메,Kagurame,"동방, Fairy, 장례, Sharp Ears, Hammer, Shade"
-적막의 연기자,Forlorn Thespian,"마수, 독서가, Sword, Earth"
-네코코 ES,Necoco (Extra Style),"Cat lover, 동방, Animal Talker, Fairy, Land of Mi, Ax, Earth"
-엘실 AS,Elseal (Another Style),"독서가, Weapons, Sword, Water"
-엠펠,Empel,"안경, 아틀리에, 독서가, Staff"
-이드,Id,"프리아레스, Fists, Earth"
-Hazama,Hazama,
-클라우디아,Klaudia,"요리, 아틀리에, Bow, Water"
-라이자,Ryza,"아틀리에, Forager, Miner, Staff, Fire"
-이즈나,Izuna,"동방, 가면, 기억 상실, Estrangement, Staff, Thunder"
-루프스 AS,Rufus (Another Style),"독서가, Fists, Fire"
-까마귀 밤의 밀정,Nocturne Ninja,"Cat lover, 동방, Glutton, Land of Mi, Ninja, Fists, Wind"
-세스타 AS,Sesta (Another Style),"Avenger, Katana, Wind"
-센야,Senya,"동방, Avenger, Cursed, Fairy, 후드, Land of Mi, Katana, Fire, Shade"
-시구레 ES,Shigure (Extra Style),"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Spicy Lover, Katana, Water"
-링리 AS,Lingli (Another Style),"요리, 동방, Land of Shin, MMA, Fists, Fire"
-쿨라,Kula,"Sweet tooth, KOF, MMA, Fists, Water"
-쿄,Kyo,"KOF, MMA, Mounted, Fists, Fire"
-마이,Mai,"KOF, 상사병, MMA, Ninja, Fists, Fire"
-가시나무 저주의 여인,Thornbound Witch,"Cat lover, Cursed, 후드, 상사병, Hammer, Wind, Shade"
-테리,Terry,"KOF, MMA, Fists, Earth"
-질버 AS,Zilva (Another Style),"미술, Forager, 무법자, Ax, Earth"
-우츠하라,Utpalaka,"아르카디아, 용, Dragon Killer, 프리아레스, Ax, Thunder"
-도희의 자객,Undercover Scribe,"독서가, 총, 무법자, Spicy Lover, Fists, Fire"
-미나르카 AS,Minalca (Another Style),"Chronos Empire, Glutton, 밀리터리, 무법자, Sword, Fire"
-Tetra AS,Tetra (Another Style),
-피네 AS,Feinne (Another Style),"Cat lover, 요리, 바르오키, Demon Sword, 지오, Staff"
-질퍼니,Jillfunny,"Cat lover, 기억 상실, 후드, Sword, Water, Crystal"
-Pyggie,Pyggie,
-Thysía,Thysía,
-마츠리카,Mazrika,"마수, Sweet tooth, 후드, Napper, 프리아레스, Ax, Water"
-야쿠모 AS,Yakumo (Another Style),"Estrangement, KMS, Staff, Shade"
-Kumos AS,Kumos (Another Style),
-전영의 샛별,Virtual Reflection,"가면, Sweet tooth, 후드, Hammer, Earth, Thunder"
-아나벨 ES,Anabel (Extra Style),"미글렌스 왕궁, Sweet tooth, Mounted, 방패, Sword, Water"
-셴화,Xianhua,"동방, 과학자, 합성인간, KMS, Staff"
-쿠치나와,Kuchinawa,"아르카디아, Staff, Earth"
-히나기쿠 AS,Daisy (Another Style),"Dog lover, 프리아레스, Spicy Lover, Hammer, Earth"
-이벨라 AS,Ewella (Another Style),"엘프, Lance, Water, Crystal"
-사잔카,Sazanca,"동방, 아르카디아, Dragon Killer, Forager, Glutton, 방패, Ax, Fire"
-멜피피아,Melpiphia,"엘프, 아르카디아, Nicknamer, Sword, Wind"
-Iridian (Attack),Iridian (Attack),
-Iridian (Defense),Iridian (Defense),
-Iridian (Heal),Iridian (Heal),
-국화의검색,Blooming Blade,"동방, Itto-Ryu, Land of Mi, Katana, Earth"
-틸릴 ES,Thillelille (Extra Style),"Clergy, Sweet tooth, West, Sword, Fire, Shade"
-Moke,Moke,
-알마 AS,Alma (Another Style),"Cat lover, 안경, 연금술사, 총, Bow, Crystal"
-웨네피카,Wenefica,"Avenger, 바르오키, Cursed, Bow, Water, Shade"
-사이러스 (협주),Cyrus Albright,"독서가, Traveler, Staff, Fire, Water, Thunder"
-오보로,Oboro,"Cat lover, 동방, 가면, Itto-Ryu, KMS, 상사병, Katana, Thunder"
-파르티티오,Partitio,"Traveler, Bow, Fire"
-티티,Tithi,"Traveler, Fists, Thunder"
-세리에스,Cerius,"아르카디아, Dragon Killer, Spicy Lover, Bow, Earth"
-류제,Wryz,"아르카디아, Cursed, 용, Dragon Killer, Lance, Water"
-폼 AS,Pom (Another Style),"과학자, Forager, 총, Staff"
-오를레아 AS,Orleya (Another Style),"Estrangement, Ax, Fire, Thunder"
-백자의 마인,Porcelain Pixie,"동방, Bind, Land of Shin, Staff, Earth"
-캄라녜쥬,Kamlanage,"Chronos Empire, 미래 혁명가, Paradoxical Dreamers' Leader, 시간의 황자, Staff, Thunder"
-베레토,Velette,"Chronos Empire, Miner, Hammer, Thunder"
-Gunce,Gunce,
-Hyuga,Hyuga,
-파리사 AS,Parisa (Another Style),"Minstrel, Cursed, Bow, Fire"
-꿈의 음유 시인,Dream Weaver,"마수, Minstrel, 프리아레스, Spicy Lover, Staff, Water"
-멜로디 AS,Melody (Another Style),"IDA 스쿨, Estrangement, Staff, Wind"
-녹시스 AS,Noahxis (Another Style),"과학자, Hammer, Wind"
-펠미나 ES,Felmina (Extra Style),"미글렌스 왕궁, 후드, Ninja, 무법자, Fists, Wind"
-엘실,Elseal,"독서가, Weapons, Sword, Water"
-프레메아 AS,Premaya (Another Style),"요리, Lost Laboratory, Machinery, Bow, Earth"
-심홍의 사자,Crimson Reaper,"가면, 프리아레스, Ax, Water"
-Limil,Limil,
-피치카 AS,Pizzica (Another Style),"Minstrel, 북방, Bow, Fire"
-Pisce,Pisce,
-노나 AS,Nona (Another Style),"기억 상실, 후드, 왕족, Bow, Water, Shade"
-세스타,Sesta,"Avenger, Katana, Wind"
-투바 ES,Toova (Extra Style),"장례, Nicknamer, Spirit-fused, Staff, Earth"
-러블리 AS,Lovely (Another Style),"요리, 드워프, Nicknamer, Fists, Fire"
-셀리느 AS,Cerrine (Another Style),"안경, IDA 스쿨, 무법자, Fists, Earth"
-잔영의 가인,Beautiful Stranger,"기억 상실, Dog lover, KMS, Sword, Earth"
-야쿠모,Yakumo,"Estrangement, KMS, Staff, Shade"
-Kumos,Kumos,
-듀이 AS,Dewey (Another Style),"안경, 독서가, 총, Lost Laboratory, 상사병, Fists, Water"
-은주의 구미호,Vermillion Whip,"요리, 동방, Fairy, Land of Shin, Spicy Lover, Lance, Fire"
-마리엘 ES,Mariel (Extra Style),"Cat lover, Clergy, Staff"
-히이나 AS,Heena (Another Style),"동방, Land of Ro, Machinery, Katana, Wind"
-가람배럴 AS,Garambarrel (Another Style),"동방, Cursed, 타이탄, Lance, Wind"
-애쉬티어,Ashtear,"안경, 과학자, 바르오키, 총, Fists, Fire"
-Korobo,Korobo,
-미나르카,Minalca,"Chronos Empire, Glutton, 밀리터리, 무법자, Sword, Fire"
-Tetra,Tetra,
-Mordy,Mordy,
-Minimander,Minimander,
-Lord Ukulele,Lord Ukulele,
-플람라피스 AS,Flammelapis (Another Style),"Clergy, Demon Sword, Glutton, 타이탄, Staff, Water"
-이프,Iphi,"총, Spicy Lover, Staff, Fire, Shade"
-꽃피우는 공주,Noble Blossom,"동방, 독서가, Fairy, Land of Ro, 왕족, Lance, Fire"
-네코코 AS,Necoco (Another Style),"Cat lover, 동방, Animal Talker, Fairy, Land of Mi, Ax, Earth"
-알펜,Alphen,"가면, 기억 상실, Concerto Artes, 테일즈 오브, Sword, Fire"
-콜레트,Colette,"Concerto Artes, Dog lover, 테일즈 오브, Staff"
-월화의 영애,Moonlight Flower,"IDA 스쿨, Sword, Water"
-로이드,Lloyd,"Concerto Artes, 테일즈 오브, Katana, Fire"
-시온 (협주),Shionne,"Concerto Artes, Cursed, Glutton, 총, 테일즈 오브, Bow, Fire"
-비아카 AS,Biaka (Another Style),"가면, 총, 밀리터리, 무법자, Hammer, Wind"
-신시아 AS,Cynthia (Another Style),"미술, Bind, 독서가, 미식, 왕족, Sword, Wind"
-클로드 ES,Claude (Extra Style),"IDA 스쿨, 독서가, 용, 왕족, Bow, Wind"
-아이샤,Aisha,"Minstrel, Cursed, Staff, Fire, Water"
-소이라 AS,Soira (Another Style),"미글렌스 왕궁, Napper, Lance, Wind"
-우쿠아지,Uquaji,"Fists, Water"
-유키노 AS,Yukino (Another Style),"동방, Fairy, Bow, Water"
-레레 AS,Lele (Another Style),"Cat lover, Animal Talker, Staff, Water"
-알마,Alma,"Cat lover, 안경, 연금술사, 총, Bow, Crystal"
-유인 AS,Yipha (Another Style),"Clergy, 상사병, Nicknamer, Spicy Lover, Hammer, Wind"
-아자미 AS,Azami (Another Style),"동방, Sweet tooth, Land of Mi, 상사병, Katana, Wind"
-먹빛의 책사,Jet Tactician,"Cat lover, 동방, 독서가, 총, Itto-Ryu, Land of Mi, Staff, Fire"
-라디아스 AS,Radias (Another Style),"미글렌스 왕궁, 방패, Sword, Fire"
-미유 ES,Miyu (Extra Style),"미글렌스 왕궁, 왕족, Sword, Fire"
-녹시스,Noahxis,"과학자, Hammer, Wind"
-노나,Nona,"기억 상실, 후드, 왕족, Bow, Water, Shade"
-오를레아,Orleya,"Estrangement, Ax, Fire, Thunder"
-미르샤 AS,Milsha (Another Style),"Minstrel, Fishman, West, Lance, Earth, Shade"
-필로 AS,Philo (Another Style),"Woodcutter, Ax, Water"
-오토하 AS,Otoha (Another Style),"Cat lover, 동방, Land of Mi, Zoology, Katana, Earth"
-마유,Mayu,"IDA 스쿨, Staff, Water"
-수제트 ES,Suzette (Extra Style),"Sweet tooth, 미식, Lost Laboratory, Lance, Wind"
-은빛을 휘감은 번개술사,Silver Striker,"Lost Laboratory, Machinery, Bow, Water, Thunder"
-별이,Starky,"Scars of the Wheel of Time, Staff, Crystal"
-보라 의상의 창술사,Violet Lancer,"기억 상실, Lost Laboratory, Lance, Earth"
-플람라피스,Flammelapis,"Clergy, Demon Sword, Glutton, 타이탄, Staff, Water"
-미스트레아 AS,Mistrare (Another Style),"Minstrel, 독서가, Nicknamer, West, Bow, Wind, Crystal"
-푸른 빛의 낫잡이,Cyan Scyther,"Sweet tooth, 미식, Lost Laboratory, Ax, Wind"
-빨간 외투의 화염술사,Red Clad Flam.,"IDA 스쿨, 총, 후드, Lost Laboratory, Fists, Fire, Crystal"
-제빌로 AS,Zeviro (Another Style),"마수, 후드, 프리아레스, Ax, Water"
-검은 옷의 칼잡이,Black Clad Sw.,"Lost Laboratory, Power to Rule, Katana, Earth, Shade"
-에바,Eva,"용, Staff, Water, Crystal"
-큐리오,Curio,"IDA 스쿨, Sweet tooth, 독서가, Lost Laboratory, Power to Rule, Katana, Wind, Shade"
-이스카 ES,Isuka (Extra Style),"IDA 스쿨, 독서가, COA, Lost Laboratory, Power to Rule, Katana, Wind"
-히나기쿠,Daisy,"Dog lover, 프리아레스, Spicy Lover, Hammer, Earth"
-레비아 AS,Levia (Another Style),"용궁, 기억 상실, Bind, Fishman, Staff, Water"
-나기 ES,Nagi (Extra Style),"용궁, Glutton, 왕족, Ax, Earth"
-츠쿠요미,Harle,"New Time Drift, Scars of the Wheel of Time, Staff, Fire, Shade"
-키드,Kid,"New Radical Dreamers, Scars of the Wheel of Time, Katana, Fire"
-키쿄 AS,Kikyo (Another Style),"Cat lover, 동방, Avenger, Mounted, Ax, Wind"
-세르주,Serge,"New Radical Dreamers, New Time Drift, Scars of the Wheel of Time, Sword"
-피치카,Pizzica,"Minstrel, 북방, Bow, Fire"
-시에라 AS,Sheila (Another Style),"용궁, Fishman, 왕족, Lance, Water"
-하디 AS,Hardy (Another Style),"Sweet tooth, Dog lover, 총, 무법자, Weapons, Zoology, Fists, Fire"
-치요 AS,Chiyo (Another Style),"용궁, Staff, Earth"
-빅트 AS,Victor (Another Style),"바르오키, Cursed, Katana, Wind, Thunder"
-밍화 AS,Myunfa (Another Style),"동방, Bind, Land of Shin, 상사병, Hammer, Earth"
-가람배럴,Garambarrel,"동방, Cursed, 타이탄, Lance, Wind"
-네코코,Necoco,"Cat lover, 동방, Animal Talker, Fairy, Land of Mi, Ax, Earth"
-츠키하 ES,Tsukiha (Extra Style),"동방, 가면, Avenger, Cursed, Fairy, Land of Ro, 왕족, Katana, Fire"
-츠바메 AS,Tsubame (Another Style),"동방, Glutton, Land of Mi, Ninja, Fists, Earth"
-멜로디,Melody,"IDA 스쿨, Estrangement, Staff, Wind"
-클라르테 AS,Clarte (Another Style),"기억 상실, 지오, West, Staff, Earth, Crystal"
-틸릴 AS,Thillelille (Another Style),"Clergy, Sweet tooth, West, Sword, Fire, Shade"
-티라미수 AS,Tiramisu (Another Style),"Sweet tooth, 용, Lance, Earth"
-시구레 AS,Shigure (Another Style),"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Spicy Lover, Katana, Water"
-메리나 ES,Melina (Extra Style),"Clergy, Minstrel, Sweet tooth, Miner, 왕족, West, Hammer, Water"
-듀나리스 AS,Dunarith (Another Style),"마수, Animal Talker, 장례, 프리아레스, Staff, Wind"
-이벨라,Ewella,"엘프, Lance, Water, Crystal"
-미유 AS,Miyu (Another Style),"미글렌스 왕궁, 왕족, Sword, Fire"
-라디카 AS,Radica (Another Style),"엘프, 상사병, Staff, Fire"
-히스메나 AS,Hismena (Another Style),"IDA 스쿨, Lance, Water"
-미르샤,Milsha,"Minstrel, Fishman, West, Lance, Earth, Shade"
-유인 AS,Ewan (Another Style),"안경, Sweet tooth, Cursed, Miner, Weapons, Hammer, Fire"
-이루루 AS,Ilulu (Another Style),"가면, 후드, 프리아레스, Ax, Wind"
-호오즈키 AS,Hozuki (Another Style),"요리, 동방, Fairy, Land of Shin, Spicy Lover, Bow, Fire"
-로제타 AS,Rosetta (Another Style),"Cat lover, Clergy, Sharp Ears, West, Staff, Fire"
-멜리사,Melissa,"합성인간, KMS, Katana, Wind, Crystal"
-히이나,Heena,"동방, Land of Ro, Machinery, Katana, Wind"
-유키노,Yukino,"동방, Fairy, Bow, Water"
-츠키하 AS,Tsukiha (Another Style),"동방, 가면, Avenger, Cursed, Fairy, Land of Ro, 왕족, Katana, Fire"
-베르트랑 AS,Bertrand (Another Style),"미글렌스 왕궁, 방패, Lance, Earth"
-클레스,Cress,"Concerto Artes, 테일즈 오브, Sword, Fire"
-미라,Milla,"Concerto Artes, 테일즈 오브, Sword, Water"
-벨벳,Velvet,"Concerto Artes, 테일즈 오브, Sword, Earth"
-유리,Yuri,"Concerto Artes, 테일즈 오브, Katana, Wind"
-클라르테,Clarte,"기억 상실, 지오, West, Staff, Earth, Crystal"
-미스트레아,Mistrare,"Minstrel, 독서가, Nicknamer, West, Bow, Wind, Crystal"
-스컬,Skull,"가면, 마음의 괴도단, 총, Hammer, Thunder"
-빅트,Victor,"바르오키, Cursed, Katana, Wind, Thunder"
-바이올렛,Violet,"가면, 마음의 괴도단, Glutton, 총, Sword, Earth"
-포란 AS,Foran (Another Style),"IDA 스쿨, Cat Hater, Lance, Water"
-틸릴,Thillelille,"Clergy, Sweet tooth, West, Sword, Fire, Shade"
-시엘 AS,Ciel (Another Style),"Minstrel, Bow, Earth"
-유인,Yipha,"Clergy, 상사병, Nicknamer, Spicy Lover, Hammer, Wind"
-섀넌 AS,Shannon (Another Style),"Cat lover, 미술, KMS, Sword, Wind"
-하디,Hardy,"Sweet tooth, Dog lover, 총, 무법자, Weapons, Zoology, Fists, Fire"
-소피아,Sophia,"미술, Bind, 미식, Weapons, Zoology, Ax, Water"
-신시아,Cynthia,"미술, Bind, 독서가, 미식, 왕족, Sword, Wind"
-베이나 AS,Veina (Another Style),"엘프, 독서가, Forager, Zoology, Staff, Wind"
-제빌로,Zeviro,"마수, 후드, 프리아레스, Ax, Water"
-아나벨 AS,Anabel (Another Style),"미글렌스 왕궁, Sweet tooth, Mounted, 방패, Sword, Water"
-Radi AS,Radias,"미글렌스 왕궁, 방패, Sword, Fire"
-뮬루스 AS,Myrus (Another Style),"마수, Staff, Earth"
-렌리 AS,Renri (Another Style),"안경, Sweet tooth, COA, Ax, Fire"
-티라미수,Tiramisu,"Sweet tooth, 용, Lance, Earth"
-엘가 AS,Elga (Another Style),"Cat lover, 기억 상실, 후드, Katana, Earth"
-펠미나 AS,Felmina (Another Style),"미글렌스 왕궁, 후드, Ninja, 무법자, Fists, Wind"
-밍화,Myunfa,"동방, Bind, Land of Shin, 상사병, Hammer, Earth"
-세티 AS,Cetie (Another Style),"안경, COA, Mounted, Lance, Fire"
-알테나,Altena,"마수, Demon Sword, 왕족, Spirit Talker, Bow"
-키쿄,Kikyo,"Cat lover, 동방, Avenger, Mounted, Ax, Wind"
-니케 AS,Nikeh (Another Style),"동방, 무법자, Katana, Water"
-Strawboy (Magic),Strawboy (Magic),"동방, Straw Dummy, Fists"
-Strawboy (Slash),Strawboy (Slash),"동방, Straw Dummy, Fists"
-Strawboy (Blunt),Strawboy (Blunt),"동방, Straw Dummy, Fists"
-Strawboy (Pierce),Strawboy (Pierce),"동방, Straw Dummy, Fists"
-Strawboy (Healer),Strawboy (Healer),"동방, Straw Dummy, Fists"
-클로드 AS,Claude (Another Style),"IDA 스쿨, 독서가, 용, 왕족, Bow, Wind"
-프레메아,Premaya,"요리, Lost Laboratory, Machinery, Bow, Earth"
-가리유 AS,Gariyu (Another Style),"용, Staff, Fire"
-유나 AS,Yuna (Another Style),"Clergy, 동방, Estrangement, Staff"
-셰이네 AS,Shanie (Another Style),"Cursed, 상사병, Sword, Water"
-루이나 AS,Ruina (Another Style),"엘프, 안경, IDA 스쿨, 독서가, Sword, Wind"
-히스메나,Hismena,"IDA 스쿨, Lance, Water"
-마나,Mana,"IDA 스쿨, Bow"
-마리엘 AS,Mariel (Another Style),"Cat lover, Clergy, Staff"
-듀나리스,Dunarith,"마수, Animal Talker, 장례, 프리아레스, Staff, Wind"
-로키드 AS,Lokido (Another Style),"마수, Avenger, Fists, Earth"
-러블리,Lovely,"요리, 드워프, Nicknamer, Fists, Fire"
-필로,Philo,"Woodcutter, Ax, Water"
-나기 AS,Nagi (Another Style),"용궁, Glutton, 왕족, Ax, Earth"
-아카네 AS,Akane (Another Style),"동방, Itto-Ryu, Land of Mi, Katana, Fire"
-조커,Joker,"안경, 가면, 마음의 괴도단, 총, Sword, Fire"
-모르가나,Morgana,"마음의 괴도단, 기억 상실, 상사병, Sword, Wind"
-로제타,Rosetta,"Cat lover, Clergy, Sharp Ears, West, Staff, Fire"
-시구레,Shigure,"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Spicy Lover, Katana, Water"
-츠바메,Tsubame,"동방, Glutton, Land of Mi, Ninja, Fists, Earth"
-메리나 AS,Melina (Another Style),"Clergy, Minstrel, Sweet tooth, Miner, 왕족, West, Hammer, Water"
-비아카,Biaka,"가면, 총, 밀리터리, 무법자, Hammer, Wind"
-갤리어드,Galliard,"합성인간, 총, Mounted, 무법자, Lance, Earth"
-호오즈키,Hozuki,"요리, 동방, Fairy, Land of Shin, Spicy Lover, Bow, Fire"
-라클레어 AS,Laclair (Another Style),"Avenger, Dog lover, Dragon Killer, Bow, Water"
-이루루,Ilulu,"가면, 후드, 프리아레스, Ax, Wind"
-라디카,Radica,"엘프, 상사병, Staff, Fire"
-노포우족,Nopaew,"대장간, Estrangement, 후드, Miner, Hammer, Wind"
-듀이,Dewey,"안경, 독서가, 총, Lost Laboratory, 상사병, Fists, Water"
-시온 AS,Shion (Another Style),"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Katana, Fire"
-베이나,Veina,"엘프, 독서가, Forager, Zoology, Staff, Wind"
-엘가,Elga,"Cat lover, 기억 상실, 후드, Katana, Earth"
-투바 AS,Toova (Another Style),"장례, Nicknamer, Spirit-fused, Staff, Earth"
-렌리,Renri,"안경, Sweet tooth, COA, Ax, Fire"
-섀넌,Shannon,"Cat lover, 미술, KMS, Sword, Wind"
-이스카 AS,Isuka (Another Style),"IDA 스쿨, 독서가, COA, Lost Laboratory, Power to Rule, Katana, Wind"
-사키 AS,Saki (Another Style),"IDA 스쿨, Staff, Water"
-클로드,Claude,"IDA 스쿨, 독서가, 용, 왕족, Bow, Wind"
-마이티 AS,Mighty (Another Style),"IDA 스쿨, Napper, Staff, Water"
-사키,Saki,"IDA 스쿨, Staff, Water"
-츠키하,Tsukiha,"동방, 가면, Avenger, Cursed, Fairy, Land of Ro, 왕족, Katana, Fire"
-베르트랑,Bertrand,"미글렌스 왕궁, 방패, Lance, Earth"
-펠미나,Felmina,"미글렌스 왕궁, 후드, Ninja, 무법자, Fists, Wind"
-길드너,Guildna,"마수, Luring Shadow, 왕족, Sword, Fire"
-수제트 AS,Suzette (Another Style),"Sweet tooth, 미식, Lost Laboratory, Lance, Wind"
-뮬루스,Myrus,"마수, Staff, Earth"
-착한 마쿠마쿠,Good Macky,"Sweet tooth, Cat Hater, Fists, Wind"
-메리나,Melina,"Clergy, Minstrel, Sweet tooth, Miner, 왕족, West, Hammer, Water"
-노놀드,Nonold,"IDA 스쿨, 과학자, Forager, KMS, Staff"
-질버,Zilva,"미술, Forager, 무법자, Ax, Earth"
-셰이네,Shanie,"Cursed, 상사병, Sword, Water"
-셀리느,Cerrine,"안경, IDA 스쿨, 무법자, Fists, Earth"
-세티,Cetie,"안경, COA, Mounted, Lance, Fire"
-야즈키,Yazuki,"안경, 무법자, Scallywag, Ax, Wind"
-유인,Ewan,"안경, Sweet tooth, Cursed, Miner, Weapons, Hammer, Fire"
-에리나,Erina,"Spirit-fused, Staff"
-레비아,Levia,"용궁, 기억 상실, Bind, Fishman, Staff, Water"
-나기,Nagi,"용궁, Glutton, 왕족, Ax, Earth"
-치요,Chiyo,"용궁, Staff, Earth"
-시에라,Sheila,"용궁, Fishman, 왕족, Lance, Water"
-가리유,Gariyu,"용, Staff, Fire"
-유나,Yuna,"Clergy, 동방, Estrangement, Staff"
-라비나,Lovinia,"Minstrel, Spirit Talker, Bow, Wind"
-이스카,Isuka,"IDA 스쿨, 독서가, COA, Lost Laboratory, Power to Rule, Katana, Wind"
-제이드,Jade,"IDA 스쿨, Lance, Fire"
-루이나,Ruina,"엘프, 안경, IDA 스쿨, 독서가, Sword, Wind"
-아자미,Azami,"동방, Sweet tooth, Land of Mi, 상사병, Katana, Wind"
-라클레어,Laclair,"Avenger, Dog lover, Dragon Killer, Bow, Water"
-사모라,Samora,"요리, 드워프, 미식, Miner, Hammer, Fire"
-아나벨,Anabel,"미글렌스 왕궁, Sweet tooth, Mounted, 방패, Sword, Water"
-디아드라,Deirdre,"미글렌스 왕궁, 기억 상실, Demon Sword, 무법자, Sword, Earth"
-네로,Nero,"동방, Land of Shin, MMA, Fists, Water"
-아카네,Akane,"동방, Itto-Ryu, Land of Mi, Katana, Fire"
-알도,Aldo,"Guiding Light, New Radical Dreamers, New Time Drift, Protagonist, 아르카디아, 바르오키, Concerto Artes, Demon Sword, 용, Forager, Itto-Ryu, Sword, Fire"
-에이미,Amy,"대장간, 요리, Avenger, Spirit-fused, Fists, Wind"
-베네디트,Benedict,"Forager, 무법자, Woodcutter, Ax, Wind"
-비베트,Bivette,"Cat lover, Animal Talker, Spirit Talker, Staff, Fire"
-브리아,Bria,"엘프, Fleareth, Lance, Water"
-시엘,Ciel,"Minstrel, Bow, Earth"
-사이러스 (스토리),Cyrus,"동방, Guiding Light, Cursed, Katana, Water"
-피네,Feinne,"Cat lover, 요리, 바르오키, Demon Sword, 지오, Staff"
-헬레나,Helena,"가면, 합성인간, Staff, Earth"
-로키드,Lokido,"마수, Avenger, Fists, Earth"
-마리엘,Mariel,"Cat lover, Clergy, Staff"
-메이,May,"대장간, 안경, 바르오키, 상사병, Miner, Hammer, Earth"
-마이티,Mighty,"IDA 스쿨, Napper, Staff, Water"
-미유,Miyu,"미글렌스 왕궁, 왕족, Sword, Fire"
-프라이,Prai,"Clergy, Miner, West, Hammer, Fire"
-리이카,Riica,"Cat lover, KMS, Machinery, Miner, Hammer, Earth"
-세빈,Sevyn,"안경, IDA 스쿨, Lost Laboratory, Spirit Talker, Staff, Wind"
-시온,Shion,"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Katana, Fire"
-수제트,Suzette,"Sweet tooth, 미식, Lost Laboratory, Lance, Wind"
-투바,Toova,"장례, Nicknamer, Spirit-fused, Staff, Earth"
-브리노,Breeno,"엘프, 미글렌스 왕궁, Sword, Earth"
-큐카,Cyuca,"가면, 무법자, Spicy Lover, Ax, Wind"
-다르니스,Darunis,"바르오키, Forager, Bow, Wind"
-데니,Denny,"Scallywag, Ax, Water"
-포란,Foran,"IDA 스쿨, Cat Hater, Lance, Water"
-코마치,Komachi,"동방, Land of Mi, Lance, Earth"
-쿨레르보,Krervo,"안경, 과학자, Forager, KMS, Staff"
-레레,Lele,"Cat lover, Animal Talker, Staff, Water"
-링리,Lingli,"요리, 동방, Land of Shin, MMA, Fists, Fire"
-미란다,Miranda,"Scallywag, Spicy Lover, Ax, Fire"
-뮤론,Myron,"Clergy, Sword, Earth"
-니케,Nikeh,"동방, 무법자, Katana, Water"
-노마르,Nomar,"바르오키, Miner, Weapons, Lance, Water"
-오토하,Otoha,"Cat lover, 동방, Land of Mi, Zoology, Katana, Earth"
-파리사,Parisa,"Minstrel, Cursed, Bow, Fire"
-폼,Pom,"과학자, Forager, 총, Staff"
-레이븐,Raven,"가면, 기억 상실, 후드, Staff, Earth"
-로벨라,Rovella,"Lost Laboratory, Machinery, 밀리터리, 무법자, Bow, Water"
-루프스,Rufus,"독서가, Fists, Fire"
-소이라,Soira,"미글렌스 왕궁, Napper, Lance, Wind"
-이오,Yio,"Dragon Killer, Ax, Earth"
-에이시아,Asia,"가면, Estrangement, Bow"
-크토스,Ctos,"Fleareth, Hammer"
-인,Een,"Machinery, Lance"
-에무스,Emms,"Fleareth, Napper, Fists"
-에스타,Esta,"Fleareth, Ax"
-킬퀴어,Kilqia,"가면, Sharp Ears, Staff"
-쿠트,Koot,"Machinery, Katana"
-메네시아,Menesia,"가면, Katana"
-나토레,Natore,"Fleareth, Ninja, Sword"
-네일리아,Naylia,"가면, Sword"
-닉사,Nixa,"Fleareth, Bow"
-누므,Noome,"Machinery, Staff"
-오르,Oor,"Machinery, Ax"
-패시아,Pasia,"Cat lover, 가면, Animal Talker, Hammer"
-로디아,Rodeia,"가면, Sweet tooth, Ax"
-세스,Saithe,"Machinery, Bow"
-사우리아,Sauria,"가면, Nicknamer, Lance"
-테임,Tayme,"Machinery, Fists"
-톰,Tohme,"Avenger, Fleareth, Katana"
-톨,Toole,"Machinery, Hammer"
-우라니아,Urania,"요리, 가면, Fists"
-우오,Uuo,"Machinery, Sword"
-이시스,Yssis,"Fleareth, Staff"
+﻿English_Name,Korean_Name,Personalities_Korean,Personalities_Count,Personalities_List
+Aldo,알도,"Guiding Light, New Radical Dreamers, New Time Drift, Protagonist, 아르카디아, 바르오키, Concerto Artes, Demon Sword, 용, Forager, Itto-Ryu, Sword, Fire",13,Guiding Light|New Radical Dreamers|New Time Drift|Protagonist|아르카디아|바르오키|Concerto Artes|Demon Sword|용|Forager|Itto-Ryu|Sword|Fire
+Senya,센야,"동방, Avenger, Cursed, Fairy, 후드, Land of Mi, Katana, Fire, Shade",9,동방|Avenger|Cursed|Fairy|후드|Land of Mi|Katana|Fire|Shade
+Tsukiha,츠키하,"동방, 가면, Avenger, Cursed, Fairy, Land of Ro, 왕족, Katana, Fire",9,동방|가면|Avenger|Cursed|Fairy|Land of Ro|왕족|Katana|Fire
+Shigure,시구레,"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Spicy Lover, Katana, Water",9,Cat lover|죽마고우|동방|Itto-Ryu|Land of Mi|Mounted|Spicy Lover|Katana|Water
+Jet Tactician,먹빛의 책사,"Cat lover, 동방, 독서가, 총, Itto-Ryu, Land of Mi, Staff, Fire",8,Cat lover|동방|독서가|총|Itto-Ryu|Land of Mi|Staff|Fire
+Sazanca,사잔카,"동방, 아르카디아, Dragon Killer, Forager, Glutton, 방패, Ax, Fire",8,동방|아르카디아|Dragon Killer|Forager|Glutton|방패|Ax|Fire
+Shion,시온,"Cat lover, 죽마고우, 동방, Itto-Ryu, Land of Mi, Mounted, Katana, Fire",8,Cat lover|죽마고우|동방|Itto-Ryu|Land of Mi|Mounted|Katana|Fire
+Oboro,오보로,"Cat lover, 동방, 가면, Itto-Ryu, KMS, 상사병, Katana, Thunder",8,Cat lover|동방|가면|Itto-Ryu|KMS|상사병|Katana|Thunder
+Melina,메리나,"Clergy, Minstrel, Sweet tooth, Miner, 왕족, West, Hammer, Water",8,Clergy|Minstrel|Sweet tooth|Miner|왕족|West|Hammer|Water
+Curio,큐리오,"IDA 스쿨, Sweet tooth, 독서가, Lost Laboratory, Power to Rule, Katana, Wind, Shade",8,IDA 스쿨|Sweet tooth|독서가|Lost Laboratory|Power to Rule|Katana|Wind|Shade
+Hardy,하디,"Sweet tooth, Dog lover, 총, 무법자, Weapons, Zoology, Fists, Fire",8,Sweet tooth|Dog lover|총|무법자|Weapons|Zoology|Fists|Fire
+Hozuki,호오즈키,"요리, 동방, Fairy, Land of Shin, Spicy Lover, Bow, Fire",7,요리|동방|Fairy|Land of Shin|Spicy Lover|Bow|Fire
+Necoco,네코코,"Cat lover, 동방, Animal Talker, Fairy, Land of Mi, Ax, Earth",7,Cat lover|동방|Animal Talker|Fairy|Land of Mi|Ax|Earth
+May,메이,"대장간, 안경, 바르오키, 상사병, Miner, Hammer, Earth",7,대장간|안경|바르오키|상사병|Miner|Hammer|Earth
+Thornbound Witch,가시나무 저주의 여인,"Cat lover, Cursed, 후드, 상사병, Hammer, Wind, Shade",7,Cat lover|Cursed|후드|상사병|Hammer|Wind|Shade
+Nocturne Ninja,까마귀 밤의 밀정,"Cat lover, 동방, Glutton, Land of Mi, Ninja, Fists, Wind",7,Cat lover|동방|Glutton|Land of Mi|Ninja|Fists|Wind
+Mazrika,마츠리카,"마수, Sweet tooth, 후드, Napper, 프리아레스, Ax, Water",7,마수|Sweet tooth|후드|Napper|프리아레스|Ax|Water
+Ruby-Sleeved Merchant,붉은 소매의 행상인,"동방, Itto-Ryu, Land of Mi, Scallywag, Spicy Lover, Sword, Earth",7,동방|Itto-Ryu|Land of Mi|Scallywag|Spicy Lover|Sword|Earth
+Noble Blossom,꽃피우는 공주,"동방, 독서가, Fairy, Land of Ro, 왕족, Lance, Fire",7,동방|독서가|Fairy|Land of Ro|왕족|Lance|Fire
+Dewey,듀이,"안경, 독서가, 총, Lost Laboratory, 상사병, Fists, Water",7,안경|독서가|총|Lost Laboratory|상사병|Fists|Water
+Ewan,유인,"안경, Sweet tooth, Cursed, Miner, Weapons, Hammer, Fire",7,안경|Sweet tooth|Cursed|Miner|Weapons|Hammer|Fire
+Red Clad Flam.,빨간 외투의 화염술사,"IDA 스쿨, 총, 후드, Lost Laboratory, Fists, Fire, Crystal",7,IDA 스쿨|총|후드|Lost Laboratory|Fists|Fire|Crystal
+Isuka,이스카,"IDA 스쿨, 독서가, COA, Lost Laboratory, Power to Rule, Katana, Wind",7,IDA 스쿨|독서가|COA|Lost Laboratory|Power to Rule|Katana|Wind
+Mistrare,미스트레아,"Minstrel, 독서가, Nicknamer, West, Bow, Wind, Crystal",7,Minstrel|독서가|Nicknamer|West|Bow|Wind|Crystal
+Vermillion Whip,은주의 구미호,"요리, 동방, Fairy, Land of Shin, Spicy Lover, Lance, Fire",7,요리|동방|Fairy|Land of Shin|Spicy Lover|Lance|Fire
+Cynthia,신시아,"미술, Bind, 독서가, 미식, 왕족, Sword, Wind",7,미술|Bind|독서가|미식|왕족|Sword|Wind
+Sophia,소피아,"미술, Bind, 미식, Weapons, Zoology, Ax, Water",7,미술|Bind|미식|Weapons|Zoology|Ax|Water
+Shionne,시온 (협주),"Concerto Artes, Cursed, Glutton, 총, 테일즈 오브, Bow, Fire",7,Concerto Artes|Cursed|Glutton|총|테일즈 오브|Bow|Fire
+Samora,사모라,"요리, 드워프, 미식, Miner, Hammer, Fire",6,요리|드워프|미식|Miner|Hammer|Fire
+Yipha,유인,"Clergy, 상사병, Nicknamer, Spicy Lover, Hammer, Wind",6,Clergy|상사병|Nicknamer|Spicy Lover|Hammer|Wind
+Levia,레비아,"용궁, 기억 상실, Bind, Fishman, Staff, Water",6,용궁|기억 상실|Bind|Fishman|Staff|Water
+Thillelille,틸릴,"Clergy, Sweet tooth, West, Sword, Fire, Shade",6,Clergy|Sweet tooth|West|Sword|Fire|Shade
+Lingli,링리,"요리, 동방, Land of Shin, MMA, Fists, Fire",6,요리|동방|Land of Shin|MMA|Fists|Fire
+Azami,아자미,"동방, Sweet tooth, Land of Mi, 상사병, Katana, Wind",6,동방|Sweet tooth|Land of Mi|상사병|Katana|Wind
+Izuna,이즈나,"동방, 가면, 기억 상실, Estrangement, Staff, Thunder",6,동방|가면|기억 상실|Estrangement|Staff|Thunder
+Kagurame,카구라메,"동방, Fairy, 장례, Sharp Ears, Hammer, Shade",6,동방|Fairy|장례|Sharp Ears|Hammer|Shade
+Ruina,루이나,"엘프, 안경, IDA 스쿨, 독서가, Sword, Wind",6,엘프|안경|IDA 스쿨|독서가|Sword|Wind
+Tsubame,츠바메,"동방, Glutton, Land of Mi, Ninja, Fists, Earth",6,동방|Glutton|Land of Mi|Ninja|Fists|Earth
+Flammelapis,플람라피스,"Clergy, Demon Sword, Glutton, 타이탄, Staff, Water",6,Clergy|Demon Sword|Glutton|타이탄|Staff|Water
+Riica,리이카,"Cat lover, KMS, Machinery, Miner, Hammer, Earth",6,Cat lover|KMS|Machinery|Miner|Hammer|Earth
+Kikyo,키쿄,"Cat lover, 동방, Avenger, Mounted, Ax, Wind",6,Cat lover|동방|Avenger|Mounted|Ax|Wind
+Jillfunny,질퍼니,"Cat lover, 기억 상실, 후드, Sword, Water, Crystal",6,Cat lover|기억 상실|후드|Sword|Water|Crystal
+Amy,에이미,"대장간, 요리, Avenger, Spirit-fused, Fists, Wind",6,대장간|요리|Avenger|Spirit-fused|Fists|Wind
+Otoha,오토하,"Cat lover, 동방, Land of Mi, Zoology, Katana, Earth",6,Cat lover|동방|Land of Mi|Zoology|Katana|Earth
+Rosetta,로제타,"Cat lover, Clergy, Sharp Ears, West, Staff, Fire",6,Cat lover|Clergy|Sharp Ears|West|Staff|Fire
+Alphen,알펜,"가면, 기억 상실, Concerto Artes, 테일즈 오브, Sword, Fire",6,가면|기억 상실|Concerto Artes|테일즈 오브|Sword|Fire
+Myunfa,밍화,"동방, Bind, Land of Shin, 상사병, Hammer, Earth",6,동방|Bind|Land of Shin|상사병|Hammer|Earth
+Joker,조커,"안경, 가면, 마음의 괴도단, 총, Sword, Fire",6,안경|가면|마음의 괴도단|총|Sword|Fire
+Sevyn,세빈,"안경, IDA 스쿨, Lost Laboratory, Spirit Talker, Staff, Wind",6,안경|IDA 스쿨|Lost Laboratory|Spirit Talker|Staff|Wind
+Veina,베이나,"엘프, 독서가, Forager, Zoology, Staff, Wind",6,엘프|독서가|Forager|Zoology|Staff|Wind
+Virtual Reflection,전영의 샛별,"가면, Sweet tooth, 후드, Hammer, Earth, Thunder",6,가면|Sweet tooth|후드|Hammer|Earth|Thunder
+Biaka,비아카,"가면, 총, 밀리터리, 무법자, Hammer, Wind",6,가면|총|밀리터리|무법자|Hammer|Wind
+Claude,클로드,"IDA 스쿨, 독서가, 용, 왕족, Bow, Wind",6,IDA 스쿨|독서가|용|왕족|Bow|Wind
+Ashtear,애쉬티어,"안경, 과학자, 바르오키, 총, Fists, Fire",6,안경|과학자|바르오키|총|Fists|Fire
+Utpalaka,우츠하라,"아르카디아, 용, Dragon Killer, 프리아레스, Ax, Thunder",6,아르카디아|용|Dragon Killer|프리아레스|Ax|Thunder
+Wenefica,웨네피카,"Avenger, 바르오키, Cursed, Bow, Water, Shade",6,Avenger|바르오키|Cursed|Bow|Water|Shade
+Galliard,갤리어드,"합성인간, 총, Mounted, 무법자, Lance, Earth",6,합성인간|총|Mounted|무법자|Lance|Earth
+Milsha,미르샤,"Minstrel, Fishman, West, Lance, Earth, Shade",6,Minstrel|Fishman|West|Lance|Earth|Shade
+Nilya,니르야,"Dog lover, Forager, MMA, Nicknamer, Fists, Crystal",6,Dog lover|Forager|MMA|Nicknamer|Fists|Crystal
+Mai,마이,"KOF, 상사병, MMA, Ninja, Fists, Fire",6,KOF|상사병|MMA|Ninja|Fists|Fire
+Rovella,로벨라,"Lost Laboratory, Machinery, 밀리터리, 무법자, Bow, Water",6,Lost Laboratory|Machinery|밀리터리|무법자|Bow|Water
+Cyrus Albright,사이러스 (협주),"독서가, Traveler, Staff, Fire, Water, Thunder",6,독서가|Traveler|Staff|Fire|Water|Thunder
+Minalca,미나르카,"Chronos Empire, Glutton, 밀리터리, 무법자, Sword, Fire",6,Chronos Empire|Glutton|밀리터리|무법자|Sword|Fire
+Kamlanage,캄라녜쥬,"Chronos Empire, 미래 혁명가, Paradoxical Dreamers' Leader, 시간의 황자, Staff, Thunder",6,Chronos Empire|미래 혁명가|Paradoxical Dreamers' Leader|시간의 황자|Staff|Thunder
+Undercover Scribe,도희의 자객,"독서가, 총, 무법자, Spicy Lover, Fists, Fire",6,독서가|총|무법자|Spicy Lover|Fists|Fire
+Felmina,펠미나,"미글렌스 왕궁, 후드, Ninja, 무법자, Fists, Wind",6,미글렌스 왕궁|후드|Ninja|무법자|Fists|Wind
+Anabel,아나벨,"미글렌스 왕궁, Sweet tooth, Mounted, 방패, Sword, Water",6,미글렌스 왕궁|Sweet tooth|Mounted|방패|Sword|Water
+Nona,노나,"기억 상실, 후드, 왕족, Bow, Water, Shade",6,기억 상실|후드|왕족|Bow|Water|Shade
+Clarte,클라르테,"기억 상실, 지오, West, Staff, Earth, Crystal",6,기억 상실|지오|West|Staff|Earth|Crystal
+Wryz,류제,"아르카디아, Cursed, 용, Dragon Killer, Lance, Water",6,아르카디아|Cursed|용|Dragon Killer|Lance|Water
+Nopaew,노포우족,"대장간, Estrangement, 후드, Miner, Hammer, Wind",6,대장간|Estrangement|후드|Miner|Hammer|Wind
+Dream Weaver,꿈의 음유 시인,"마수, Minstrel, 프리아레스, Spicy Lover, Staff, Water",6,마수|Minstrel|프리아레스|Spicy Lover|Staff|Water
+Dunarith,듀나리스,"마수, Animal Talker, 장례, 프리아레스, Staff, Wind",6,마수|Animal Talker|장례|프리아레스|Staff|Wind
+Alma,알마,"Cat lover, 안경, 연금술사, 총, Bow, Crystal",6,Cat lover|안경|연금술사|총|Bow|Crystal
+Violet,바이올렛,"가면, 마음의 괴도단, Glutton, 총, Sword, Earth",6,가면|마음의 괴도단|Glutton|총|Sword|Earth
+Deirdre,디아드라,"미글렌스 왕궁, 기억 상실, Demon Sword, 무법자, Sword, Earth",6,미글렌스 왕궁|기억 상실|Demon Sword|무법자|Sword|Earth
+Feinne,피네,"Cat lover, 요리, 바르오키, Demon Sword, 지오, Staff",6,Cat lover|요리|바르오키|Demon Sword|지오|Staff
+Nonold,노놀드,"IDA 스쿨, 과학자, Forager, KMS, Staff",5,IDA 스쿨|과학자|Forager|KMS|Staff
+Ilulu,이루루,"가면, 후드, 프리아레스, Ax, Wind",5,가면|후드|프리아레스|Ax|Wind
+Krervo,쿨레르보,"안경, 과학자, Forager, KMS, Staff",5,안경|과학자|Forager|KMS|Staff
+Yazuki,야즈키,"안경, 무법자, Scallywag, Ax, Wind",5,안경|무법자|Scallywag|Ax|Wind
+Garambarrel,가람배럴,"동방, Cursed, 타이탄, Lance, Wind",5,동방|Cursed|타이탄|Lance|Wind
+Cerius,세리에스,"아르카디아, Dragon Killer, Spicy Lover, Bow, Earth",5,아르카디아|Dragon Killer|Spicy Lover|Bow|Earth
+Kula,쿨라,"Sweet tooth, KOF, MMA, Fists, Water",5,Sweet tooth|KOF|MMA|Fists|Water
+Suzette,수제트,"Sweet tooth, 미식, Lost Laboratory, Lance, Wind",5,Sweet tooth|미식|Lost Laboratory|Lance|Wind
+Harle,츠쿠요미,"New Time Drift, Scars of the Wheel of Time, Staff, Fire, Shade",5,New Time Drift|Scars of the Wheel of Time|Staff|Fire|Shade
+Morgana,모르가나,"마음의 괴도단, 기억 상실, 상사병, Sword, Wind",5,마음의 괴도단|기억 상실|상사병|Sword|Wind
+Skull,스컬,"가면, 마음의 괴도단, 총, Hammer, Thunder",5,가면|마음의 괴도단|총|Hammer|Thunder
+Aisha,아이샤,"Minstrel, Cursed, Staff, Fire, Water",5,Minstrel|Cursed|Staff|Fire|Water
+Beautiful Stranger,잔영의 가인,"기억 상실, Dog lover, KMS, Sword, Earth",5,기억 상실|Dog lover|KMS|Sword|Earth
+Hoarfrost Songstress,빙무의 가희,"동방, Minstrel, Fairy, Bow, Water",5,동방|Minstrel|Fairy|Bow|Water
+Shannon,섀넌,"Cat lover, 미술, KMS, Sword, Wind",5,Cat lover|미술|KMS|Sword|Wind
+Nagi,나기,"용궁, Glutton, 왕족, Ax, Earth",5,용궁|Glutton|왕족|Ax|Earth
+Bivette,비베트,"Cat lover, Animal Talker, Spirit Talker, Staff, Fire",5,Cat lover|Animal Talker|Spirit Talker|Staff|Fire
+Prai,프라이,"Clergy, Miner, West, Hammer, Fire",5,Clergy|Miner|West|Hammer|Fire
+Premaya,프레메아,"요리, Lost Laboratory, Machinery, Bow, Earth",5,요리|Lost Laboratory|Machinery|Bow|Earth
+Lovely,러블리,"요리, 드워프, Nicknamer, Fists, Fire",5,요리|드워프|Nicknamer|Fists|Fire
+Altena,알테나,"마수, Demon Sword, 왕족, Spirit Talker, Bow",5,마수|Demon Sword|왕족|Spirit Talker|Bow
+Guildna,길드너,"마수, Luring Shadow, 왕족, Sword, Fire",5,마수|Luring Shadow|왕족|Sword|Fire
+Elga,엘가,"Cat lover, 기억 상실, 후드, Katana, Earth",5,Cat lover|기억 상실|후드|Katana|Earth
+Zeviro,제빌로,"마수, 후드, 프리아레스, Ax, Water",5,마수|후드|프리아레스|Ax|Water
+Porcelain Pixie,백자의 마인,"동방, Bind, Land of Shin, Staff, Earth",5,동방|Bind|Land of Shin|Staff|Earth
+Renri,렌리,"안경, Sweet tooth, COA, Ax, Fire",5,안경|Sweet tooth|COA|Ax|Fire
+Cerrine,셀리느,"안경, IDA 스쿨, 무법자, Fists, Earth",5,안경|IDA 스쿨|무법자|Fists|Earth
+Cetie,세티,"안경, COA, Mounted, Lance, Fire",5,안경|COA|Mounted|Lance|Fire
+Xianhua,셴화,"동방, 과학자, 합성인간, KMS, Staff",5,동방|과학자|합성인간|KMS|Staff
+Melpiphia,멜피피아,"엘프, 아르카디아, Nicknamer, Sword, Wind",5,엘프|아르카디아|Nicknamer|Sword|Wind
+Blooming Blade,국화의검색,"동방, Itto-Ryu, Land of Mi, Katana, Earth",5,동방|Itto-Ryu|Land of Mi|Katana|Earth
+Nero,네로,"동방, Land of Shin, MMA, Fists, Water",5,동방|Land of Shin|MMA|Fists|Water
+Akane,아카네,"동방, Itto-Ryu, Land of Mi, Katana, Fire",5,동방|Itto-Ryu|Land of Mi|Katana|Fire
+Heena,히이나,"동방, Land of Ro, Machinery, Katana, Wind",5,동방|Land of Ro|Machinery|Katana|Wind
+Cyrus,사이러스 (스토리),"동방, Guiding Light, Cursed, Katana, Water",5,동방|Guiding Light|Cursed|Katana|Water
+Sheila,시에라,"용궁, Fishman, 왕족, Lance, Water",5,용궁|Fishman|왕족|Lance|Water
+Melissa,멜리사,"합성인간, KMS, Katana, Wind, Crystal",5,합성인간|KMS|Katana|Wind|Crystal
+Cyan Scyther,푸른 빛의 낫잡이,"Sweet tooth, 미식, Lost Laboratory, Ax, Wind",5,Sweet tooth|미식|Lost Laboratory|Ax|Wind
+Ryza,라이자,"아틀리에, Forager, Miner, Staff, Fire",5,아틀리에|Forager|Miner|Staff|Fire
+Zilva,질버,"미술, Forager, 무법자, Ax, Earth",5,미술|Forager|무법자|Ax|Earth
+Raven,레이븐,"가면, 기억 상실, 후드, Staff, Earth",5,가면|기억 상실|후드|Staff|Earth
+Kyo,쿄,"KOF, MMA, Mounted, Fists, Fire",5,KOF|MMA|Mounted|Fists|Fire
+Black Clad Sw.,검은 옷의 칼잡이,"Lost Laboratory, Power to Rule, Katana, Earth, Shade",5,Lost Laboratory|Power to Rule|Katana|Earth|Shade
+Silver Striker,은빛을 휘감은 번개술사,"Lost Laboratory, Machinery, Bow, Water, Thunder",5,Lost Laboratory|Machinery|Bow|Water|Thunder
+Iphi,이프,"총, Spicy Lover, Staff, Fire, Shade",5,총|Spicy Lover|Staff|Fire|Shade
+Daisy,히나기쿠,"Dog lover, 프리아레스, Spicy Lover, Hammer, Earth",5,Dog lover|프리아레스|Spicy Lover|Hammer|Earth
+Benedict,베네디트,"Forager, 무법자, Woodcutter, Ax, Wind",5,Forager|무법자|Woodcutter|Ax|Wind
+Toova,투바,"장례, Nicknamer, Spirit-fused, Staff, Earth",5,장례|Nicknamer|Spirit-fused|Staff|Earth
+Laclair,라클레어,"Avenger, Dog lover, Dragon Killer, Bow, Water",5,Avenger|Dog lover|Dragon Killer|Bow|Water
+Victor,빅트,"바르오키, Cursed, Katana, Wind, Thunder",5,바르오키|Cursed|Katana|Wind|Thunder
+Nomar,노마르,"바르오키, Miner, Weapons, Lance, Water",5,바르오키|Miner|Weapons|Lance|Water
+Cyuca,큐카,"가면, 무법자, Spicy Lover, Ax, Wind",5,가면|무법자|Spicy Lover|Ax|Wind
+Ewella,이벨라,"엘프, Lance, Water, Crystal",4,엘프|Lance|Water|Crystal
+Bria,브리아,"엘프, Fleareth, Lance, Water",4,엘프|Fleareth|Lance|Water
+Komachi,코마치,"동방, Land of Mi, Lance, Earth",4,동방|Land of Mi|Lance|Earth
+Nikeh,니케,"동방, 무법자, Katana, Water",4,동방|무법자|Katana|Water
+Yukino,유키노,"동방, Fairy, Bow, Water",4,동방|Fairy|Bow|Water
+Breeno,브리노,"엘프, 미글렌스 왕궁, Sword, Earth",4,엘프|미글렌스 왕궁|Sword|Earth
+Lokido,로키드,"마수, Avenger, Fists, Earth",4,마수|Avenger|Fists|Earth
+Forlorn Thespian,적막의 연기자,"마수, 독서가, Sword, Earth",4,마수|독서가|Sword|Earth
+Yuna,유나,"Clergy, 동방, Estrangement, Staff",4,Clergy|동방|Estrangement|Staff
+Klaudia,클라우디아,"요리, 아틀리에, Bow, Water",4,요리|아틀리에|Bow|Water
+Lele,레레,"Cat lover, Animal Talker, Staff, Water",4,Cat lover|Animal Talker|Staff|Water
+Pasia,패시아,"Cat lover, 가면, Animal Talker, Hammer",4,Cat lover|가면|Animal Talker|Hammer
+Radica,라디카,"엘프, 상사병, Staff, Fire",4,엘프|상사병|Staff|Fire
+Helena,헬레나,"가면, 합성인간, Staff, Earth",4,가면|합성인간|Staff|Earth
+Foran,포란,"IDA 스쿨, Cat Hater, Lance, Water",4,IDA 스쿨|Cat Hater|Lance|Water
+Mighty,마이티,"IDA 스쿨, Napper, Staff, Water",4,IDA 스쿨|Napper|Staff|Water
+Selfless Seeker,의협의 사냥꾼,"총, 무법자, Bow, Earth",4,총|무법자|Bow|Earth
+Terry,테리,"KOF, MMA, Fists, Earth",4,KOF|MMA|Fists|Earth
+Orleya,오를레아,"Estrangement, Ax, Fire, Thunder",4,Estrangement|Ax|Fire|Thunder
+Yakumo,야쿠모,"Estrangement, KMS, Staff, Shade",4,Estrangement|KMS|Staff|Shade
+Eva,에바,"용, Staff, Water, Crystal",4,용|Staff|Water|Crystal
+Shanie,셰이네,"Cursed, 상사병, Sword, Water",4,Cursed|상사병|Sword|Water
+Velvet,벨벳,"Concerto Artes, 테일즈 오브, Sword, Earth",4,Concerto Artes|테일즈 오브|Sword|Earth
+Yuri,유리,"Concerto Artes, 테일즈 오브, Katana, Wind",4,Concerto Artes|테일즈 오브|Katana|Wind
+Miranda,미란다,"Scallywag, Spicy Lover, Ax, Fire",4,Scallywag|Spicy Lover|Ax|Fire
+Milla,미라,"Concerto Artes, 테일즈 오브, Sword, Water",4,Concerto Artes|테일즈 오브|Sword|Water
+Cress,클레스,"Concerto Artes, 테일즈 오브, Sword, Fire",4,Concerto Artes|테일즈 오브|Sword|Fire
+Colette,콜레트,"Concerto Artes, Dog lover, 테일즈 오브, Staff",4,Concerto Artes|Dog lover|테일즈 오브|Staff
+Linaria,리나리아,"IDA 스쿨, COA, Sword, Fire",4,IDA 스쿨|COA|Sword|Fire
+Melody,멜로디,"IDA 스쿨, Estrangement, Staff, Wind",4,IDA 스쿨|Estrangement|Staff|Wind
+Empel,엠펠,"안경, 아틀리에, 독서가, Staff",4,안경|아틀리에|독서가|Staff
+Crimson Reaper,심홍의 사자,"가면, 프리아레스, Ax, Water",4,가면|프리아레스|Ax|Water
+Elseal,엘실,"독서가, Weapons, Sword, Water",4,독서가|Weapons|Sword|Water
+Violet Lancer,보라 의상의 창술사,"기억 상실, Lost Laboratory, Lance, Earth",4,기억 상실|Lost Laboratory|Lance|Earth
+Tiramisu,티라미수,"Sweet tooth, 용, Lance, Earth",4,Sweet tooth|용|Lance|Earth
+Darunis,다르니스,"바르오키, Forager, Bow, Wind",4,바르오키|Forager|Bow|Wind
+Velette,베레토,"Chronos Empire, Miner, Hammer, Thunder",4,Chronos Empire|Miner|Hammer|Thunder
+Miyu,미유,"미글렌스 왕궁, 왕족, Sword, Fire",4,미글렌스 왕궁|왕족|Sword|Fire
+Bertrand,베르트랑,"미글렌스 왕궁, 방패, Lance, Earth",4,미글렌스 왕궁|방패|Lance|Earth
+Good Macky,착한 마쿠마쿠,"Sweet tooth, Cat Hater, Fists, Wind",4,Sweet tooth|Cat Hater|Fists|Wind
+Radias,라디아스,"미글렌스 왕궁, 방패, Sword, Fire",4,미글렌스 왕궁|방패|Sword|Fire
+Pizzica,피치카,"Minstrel, 북방, Bow, Fire",4,Minstrel|북방|Bow|Fire
+Kid,키드,"New Radical Dreamers, Scars of the Wheel of Time, Katana, Fire",4,New Radical Dreamers|Scars of the Wheel of Time|Katana|Fire
+Pom,폼,"과학자, Forager, 총, Staff",4,과학자|Forager|총|Staff
+Parisa,파리사,"Minstrel, Cursed, Bow, Fire",4,Minstrel|Cursed|Bow|Fire
+Soira,소이라,"미글렌스 왕궁, Napper, Lance, Wind",4,미글렌스 왕궁|Napper|Lance|Wind
+Lovinia,라비나,"Minstrel, Spirit Talker, Bow, Wind",4,Minstrel|Spirit Talker|Bow|Wind
+Serge,세르주,"New Radical Dreamers, New Time Drift, Scars of the Wheel of Time, Sword",4,New Radical Dreamers|New Time Drift|Scars of the Wheel of Time|Sword
+Lloyd,로이드,"Concerto Artes, 테일즈 오브, Katana, Fire",4,Concerto Artes|테일즈 오브|Katana|Fire
+Saki,사키,"IDA 스쿨, Staff, Water",3,IDA 스쿨|Staff|Water
+Mayu,마유,"IDA 스쿨, Staff, Water",3,IDA 스쿨|Staff|Water
+Moonlight Flower,월화의 영애,"IDA 스쿨, Sword, Water",3,IDA 스쿨|Sword|Water
+Id,이드,"프리아레스, Fists, Earth",3,프리아레스|Fists|Earth
+Hismena,히스메나,"IDA 스쿨, Lance, Water",3,IDA 스쿨|Lance|Water
+Strawboy,짚돌이,"동방, Straw Dummy, Fists",3,동방|Straw Dummy|Fists
+Chiyo,치요,"용궁, Staff, Earth",3,용궁|Staff|Earth
+Myrus,뮬루스,"마수, Staff, Earth",3,마수|Staff|Earth
+Mariel,마리엘,"Cat lover, Clergy, Staff",3,Cat lover|Clergy|Staff
+Myron,뮤론,"Clergy, Sword, Earth",3,Clergy|Sword|Earth
+Urania,우라니아,"요리, 가면, Fists",3,요리|가면|Fists
+Jade,제이드,"IDA 스쿨, Lance, Fire",3,IDA 스쿨|Lance|Fire
+Asia,에이시아,"가면, Estrangement, Bow",3,가면|Estrangement|Bow
+Rodeia,로디아,"가면, Sweet tooth, Ax",3,가면|Sweet tooth|Ax
+Sauria,사우리아,"가면, Nicknamer, Lance",3,가면|Nicknamer|Lance
+Miyu ES,Miyu ES,"Lance, Earth, Thunder",3,Lance|Earth|Thunder
+Melina ES,Melina ES,"Fists, Water, Thunder",3,Fists|Water|Thunder
+Rufus,루프스,"독서가, Fists, Fire",3,독서가|Fists|Fire
+Tohme,톰,"Avenger, Fleareth, Katana",3,Avenger|Fleareth|Katana
+Ciel,시엘,"Minstrel, Bow, Earth",3,Minstrel|Bow|Earth
+Noahxis,녹시스,"과학자, Hammer, Wind",3,과학자|Hammer|Wind
+Sesta,세스타,"Avenger, Katana, Wind",3,Avenger|Katana|Wind
+Kuchinawa,쿠치나와,"아르카디아, Staff, Earth",3,아르카디아|Staff|Earth
+Kilqia,킬퀴어,"가면, Sharp Ears, Staff",3,가면|Sharp Ears|Staff
+Gariyu,가리유,"용, Staff, Fire",3,용|Staff|Fire
+Natore,나토레,"Fleareth, Ninja, Sword",3,Fleareth|Ninja|Sword
+Yio,이오,"Dragon Killer, Ax, Earth",3,Dragon Killer|Ax|Earth
+Philo,필로,"Woodcutter, Ax, Water",3,Woodcutter|Ax|Water
+Tithi,티티,"Traveler, Fists, Thunder",3,Traveler|Fists|Thunder
+Starky,별이,"Scars of the Wheel of Time, Staff, Crystal",3,Scars of the Wheel of Time|Staff|Crystal
+Emms,에무스,"Fleareth, Napper, Fists",3,Fleareth|Napper|Fists
+Partitio,파르티티오,"Traveler, Bow, Fire",3,Traveler|Bow|Fire
+Denny,데니,"Scallywag, Ax, Water",3,Scallywag|Ax|Water
+Isuka ES,Isuka ES,"Sword, Fire, Shade",3,Sword|Fire|Shade
+Toova ES,Toova ES,"Hammer, Water, Shade",3,Hammer|Water|Shade
+Nagi ES,Nagi ES,"Staff, Water, Crystal",3,Staff|Water|Crystal
+Mana,마나,"IDA 스쿨, Bow",2,IDA 스쿨|Bow
+Naylia,네일리아,"가면, Sword",2,가면|Sword
+Menesia,메네시아,"가면, Katana",2,가면|Katana
+Esta,에스타,"Fleareth, Ax",2,Fleareth|Ax
+Ctos,크토스,"Fleareth, Hammer",2,Fleareth|Hammer
+Yssis,이시스,"Fleareth, Staff",2,Fleareth|Staff
+Nixa,닉사,"Fleareth, Bow",2,Fleareth|Bow
+Uuo,우오,"Machinery, Sword",2,Machinery|Sword
+Toole,톨,"Machinery, Hammer",2,Machinery|Hammer
+Tayme,테임,"Machinery, Fists",2,Machinery|Fists
+Een,인,"Machinery, Lance",2,Machinery|Lance
+Erina,에리나,"Spirit-fused, Staff",2,Spirit-fused|Staff
+Koot,쿠트,"Machinery, Katana",2,Machinery|Katana
+Noome,누므,"Machinery, Staff",2,Machinery|Staff
+Oor,오르,"Machinery, Ax",2,Machinery|Ax
+Saithe,세스,"Machinery, Bow",2,Machinery|Bow
+Shigure ES,Shigure ES,"Katana, Wind",2,Katana|Wind
+Claude ES,Claude ES,"Sword, Earth",2,Sword|Earth
+Thillelille ES,Thillelille ES,"Sword, Crystal",2,Sword|Crystal
+Anabel ES,Anabel ES,"Lance, Fire",2,Lance|Fire
+Felmina ES,Felmina ES,"Ax, Water",2,Ax|Water
+Shion ES,Shion ES,"Katana, Thunder",2,Katana|Thunder
+Necoco ES,Necoco ES,"Bow, Wind",2,Bow|Wind
+Mariel ES,Mariel ES,"Fists, Crystal",2,Fists|Crystal
+Tsukiha ES,Tsukiha ES,"Bow, Wind",2,Bow|Wind
+Uquaji,우쿠아지,"Fists, Water",2,Fists|Water
+Suzette ES,Suzette ES,"Hammer, Fire",2,Hammer|Fire
